@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { ImportSchema, PolicySchema, type Principal } from '../../../packages/contracts/src/index.js';
+import { ImportSchema, PolicySchema, type Principal } from '../../../packages/contract/src/index.js';
 import { derive } from '../domain/derive.js';
 import { AppError, requireCondition } from '../domain/errors.js';
 import { assertUnique, validateReferences } from '../domain/validate.js';

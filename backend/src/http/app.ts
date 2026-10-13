@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { z, ZodError } from 'zod';
-import { AnswerSheetRequestSchema, Id, type Principal } from '../../../packages/contracts/src/index.js';
+import { AnswerSheetRequestSchema, Id, type Principal } from '../../../packages/contract/src/index.js';
 import type { Authenticator } from '../auth/authenticator.js';
 import { canReadStudent, requireManager, requireStaff, requireStudent } from '../auth/permissions.js';
 import { AppError, requireCondition } from '../domain/errors.js';
@@ -12,6 +12,7 @@ import { ImportService, reportFacts } from '../services/imports.js';
 import { ScanService } from '../services/scans.js';
 import { UnconfiguredAi, type AiProvider } from '../integrations/ai.js';
 import { openApi } from './openapi.js';
+import { moduleDependencies, type BackendModule } from '../modules.js';
 
 declare module 'fastify' { interface FastifyRequest { principal: Principal } }
 const Page = z.object({ cursor: z.coerce.number().int().min(0).default(0), limit: z.coerce.number().int().min(1).max(500).default(100) });
@@ -20,11 +21,13 @@ function paginate<T>(items: T[], query: unknown, revision: number) {
   return { items: items.slice(cursor, cursor + limit), total: items.length,
     nextCursor: cursor + limit < items.length ? cursor + limit : null, stateRevision: revision };
 }
-export function createApp(options: { repository: Repository; auth: Authenticator; corsOrigins?: string[]; ai?: AiProvider }) {
+export function createApp(options: { repository: Repository; auth: Authenticator; corsOrigins?: string[]; ai?: AiProvider; modules?: BackendModule[] }) {
   const app = Fastify({ logger: false, bodyLimit: 9_000_000, requestTimeout: 30_000 });
   const repository = options.repository;
   const imports = new ImportService(repository);
-  const scans = new ScanService(repository, options.ai ?? new UnconfiguredAi(), imports);
+  const ai = options.ai ?? new UnconfiguredAi();
+  const scans = new ScanService(repository, ai, imports);
+  const dependencies = moduleDependencies(repository, ai, imports);
   app.register(cors, { origin: options.corsOrigins ?? [], methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Demo-User'] });
   app.decorateRequest('principal');
@@ -142,5 +145,8 @@ export function createApp(options: { repository: Repository; auth: Authenticator
     return job;
   });
   app.addHook('onClose', async () => { await scans.idle(); await repository.close(); });
+  for (const register of options.modules ?? []) {
+    app.register(async instance => { await register(instance, dependencies); });
+  }
   return { app, imports, scans };
 }

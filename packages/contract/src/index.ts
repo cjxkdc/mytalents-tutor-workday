@@ -1,3 +1,4 @@
+/** Backend v1 contracts alongside the existing portal mock contract. */
 import { z } from 'zod';
 
 export const Id = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/)

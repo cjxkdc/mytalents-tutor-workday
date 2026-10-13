@@ -24,5 +24,6 @@ work/
 
 # Editor and operating-system files
 .idea/
+.vscode/
 .DS_Store
 Thumbs.db

@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { PrincipalSchema, type Principal } from '../../../packages/contracts/src/index.js';
+import { PrincipalSchema, type Principal } from '../../../packages/contract/src/index.js';
 import { AppError } from '../domain/errors.js';
 export interface Authenticator { authenticate(headers: Record<string, string | string[] | undefined>): Principal }
 const demoUsers: Record<string, Principal> = {

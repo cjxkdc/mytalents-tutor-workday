@@ -19,7 +19,7 @@
 ## 目录边界
 
 ```text
-packages/contracts/src/   共用类型、Zod 输入契约
+packages/contract/src/   共用类型、Zod 输入契约
 backend/src/auth/         身份和学生范围权限
 backend/src/domain/       纯推导、引用校验、State、错误
 backend/src/services/     导入事务、扫描编排、报告事实

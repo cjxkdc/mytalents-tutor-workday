@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ScanRequestSchema, RecognitionSchema, AiGradeSchema, type Principal, type ScanJob } from '../../../packages/contracts/src/index.js';
+import { ScanRequestSchema, RecognitionSchema, AiGradeSchema, type Principal, type ScanJob } from '../../../packages/contract/src/index.js';
 import { requireStudent } from '../auth/permissions.js';
 import { AppError, requireCondition } from '../domain/errors.js';
 import type { Repository } from '../repositories/repository.js';

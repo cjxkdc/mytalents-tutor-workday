@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { AnswerSheetRequestSchema, ImportSchema, PolicySchema, ScanRequestSchema,
   StudentSchema, KnowledgePointSchema, ExamSchema, AttemptSchema, MasteryObservationSchema,
-  ActivitySchema, ResourceSchema, RecognitionSchema, AiGradeSchema } from '../../../packages/contracts/src/index.js';
+  ActivitySchema, ResourceSchema, RecognitionSchema, AiGradeSchema } from '../../../packages/contract/src/index.js';
 const schemas = { ImportBatch: ImportSchema, Policy: PolicySchema, AnswerSheetRequest: AnswerSheetRequestSchema,
   ScanRequest: ScanRequestSchema, Student: StudentSchema, KnowledgePoint: KnowledgePointSchema,
   Exam: ExamSchema, Attempt: AttemptSchema, MasteryObservation: MasteryObservationSchema,

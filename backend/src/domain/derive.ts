@@ -1,4 +1,4 @@
-import type { Evidence, FollowUp, ProgressRow, Projections } from '../../../packages/contracts/src/index.js';
+import type { Evidence, FollowUp, ProgressRow, Projections } from '../../../packages/contract/src/index.js';
 import type { State, StoredAttempt } from './state.js';
 
 const time = (value: string) => Date.parse(value);

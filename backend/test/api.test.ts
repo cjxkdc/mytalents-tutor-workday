@@ -69,3 +69,19 @@ test('missing AI configuration fails explicitly instead of fabricating grades', 
     assert.equal(result.statusCode, 503); assert.equal(result.json().error.code, 'AI_NOT_CONFIGURED');
   } finally { await app.close(); }
 });
+test('teammate module gets the documented dependencies and inherits authentication', async () => {
+  const { app } = createApp({ repository: new MemoryRepository(), auth: new DemoAuthenticator(), modules: [
+    (server, deps) => {
+      server.get('/api/v1/teammate-test', async request => {
+        deps.access.requireStaff(request.principal);
+        const state = await deps.repo.read();
+        return { policyVersion: deps.policy.current(state).version, count: deps.derive(state).marking.length };
+      });
+    },
+  ] });
+  try {
+    assert.equal((await app.inject('/api/v1/teammate-test')).statusCode, 401);
+    assert.equal((await app.inject({ url: '/api/v1/teammate-test', headers: { 'x-demo-user': 'demo-student-1' } })).statusCode, 403);
+    assert.equal((await app.inject({ url: '/api/v1/teammate-test', headers: { 'x-demo-user': 'demo-teacher' } })).json().policyVersion, 'policy-1');
+  } finally { await app.close(); }
+});

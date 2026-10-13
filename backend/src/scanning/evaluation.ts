@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Id, Outcome } from '../../../packages/contracts/src/index.js';
+import { Id, Outcome } from '../../../packages/contract/src/index.js';
 import { assertUnique } from '../domain/validate.js';
 import { requireCondition } from '../domain/errors.js';
 const Item = z.object({ pageId: Id, questionId: Id, outcome: Outcome,

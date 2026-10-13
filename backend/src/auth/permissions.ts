@@ -1,4 +1,4 @@
-import type { Principal } from '../../../packages/contracts/src/index.js';
+import type { Principal } from '../../../packages/contract/src/index.js';
 import { AppError } from '../domain/errors.js';
 export const canReadStudent = (principal: Principal, studentId: string) =>
   principal.role === 'manager' || principal.studentIds.includes(studentId);

@@ -1,4 +1,4 @@
-import type { Attempt } from '../../../packages/contracts/src/index.js';
+import type { Attempt } from '../../../packages/contract/src/index.js';
 import type { State } from './state.js';
 import { requireCondition } from './errors.js';
 

@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import sharp from 'sharp';
 import { createRequire } from 'node:module';
-import type { Exam } from '../../../packages/contracts/src/index.js';
+import type { Exam } from '../../../packages/contract/src/index.js';
 import { requireCondition } from '../domain/errors.js';
 import { stable } from '../services/imports.js';
 

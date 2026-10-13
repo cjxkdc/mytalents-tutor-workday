@@ -1,6 +1,6 @@
 # API 接入说明
 
-Base URL：`http://127.0.0.1:3100`。机器契约 `GET /openapi.json`；类型见 [共享契约](../packages/contracts/src/index.ts)。所有示例使用合成数据。
+Base URL：`http://127.0.0.1:3100`。机器契约 `GET /openapi.json`；类型见 [共享契约](../packages/contract/src/index.ts)。所有示例使用合成数据。
 
 ## 认证与错误
 

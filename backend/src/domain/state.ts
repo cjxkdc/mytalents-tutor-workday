@@ -1,5 +1,5 @@
 import type { Activity, Attempt, Exam, KnowledgePoint, MasteryObservation, Policy,
-  Projections, Resource, ScanJob, Student } from '../../../packages/contracts/src/index.js';
+  Projections, Resource, ScanJob, Student } from '../../../packages/contract/src/index.js';
 export interface StoredAttempt extends Attempt { source: string; importId: string }
 export interface ImportResult {
   id: string; source: string; batchId: string; hash: string; createdBy: string;
@@ -11,7 +11,7 @@ export interface AuditEntry {
   importId?: string; policyVersion: string;
 }
 export interface DomainEvent {
-  id: string; at: string; type: 'import.completed' | 'policy.activated';
+  id: string; at: string; type: 'import.completed' | 'policy.activated' | 'notification.requested';
   referenceId: string; studentIds: string[]; policyVersion: string;
 }
 export interface State {

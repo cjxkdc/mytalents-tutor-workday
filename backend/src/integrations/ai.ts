@@ -1,4 +1,4 @@
-import { AiGradeSchema, RecognitionSchema, type Exam } from '../../../packages/contracts/src/index.js';
+import { AiGradeSchema, RecognitionSchema, type Exam } from '../../../packages/contract/src/index.js';
 import { AppError } from '../domain/errors.js';
 import type { z } from 'zod';
 export interface AiProvider {

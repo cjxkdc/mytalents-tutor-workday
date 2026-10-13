@@ -5,7 +5,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
     AUTH_MODE: z.enum(['demo', 'token']).default('demo'),
     REPOSITORY: z.enum(['local', 'memory', 'sheets']).default('local'),
     DATA_FILE: z.string().default('data/private/workday.json'),
-    CORS_ORIGINS: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
+    CORS_ORIGINS: z.string().default('http://localhost:8765,http://127.0.0.1:8765,http://localhost:5173,http://127.0.0.1:5173'),
     API_KEYS_JSON: z.string().optional(), GOOGLE_SPREADSHEET_ID: z.string().optional(),
     AI_GATEWAY_URL: z.string().optional(), AI_GATEWAY_TOKEN: z.string().optional(),
     NODE_ENV: z.string().optional(),
