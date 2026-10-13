@@ -2,6 +2,8 @@
 import { esc, icon, initials, errorBanner, fmtDate, requestGate } from '../../../packages/ui/components/html.js';
 import { weekDays, weekStrip, agenda } from '../../../packages/ui/components/week.js';
 
+const STATE = { cancelled: 'Cancelled (leave)', moved: 'Moved to another time' };
+
 export function render(el, params, ctx) {
   const { user, routes } = ctx;
   let tab = 'day';
@@ -46,10 +48,9 @@ export function render(el, params, ctx) {
     if (tab === 'day') {
       const days = weekDays(data.today);
       selected = selected || data.today;
-      const day = days.find(d => d.iso === selected);
-      const items = data.week.filter(t => t.day === day.weekday).sort((a, b) => a.start.localeCompare(b.start))
-        .map(t => ({ title: t.studentName, sub: `${t.mode === 'online' ? 'Online lesson' : 'On-site lesson'} with ${t.teacher}`, time: `${t.start} - ${t.end}`, place: t.room }));
-      panel.innerHTML = `<div class="notice">Shift 14:00-19:00 · ${data.queued} test(s) waiting to be marked</div>
+      const items = data.week.filter(t => t.date === selected)
+        .map(t => ({ title: t.studentName, sub: STATE[t.state] ? `${STATE[t.state]} · ${t.teacher}` : `${t.mode === 'online' ? 'Online lesson' : 'On-site lesson'} with ${t.teacher}`, time: `${t.start} - ${t.end}`, place: t.room }));
+      panel.innerHTML = `<div class="notice">Shift 14:00-19:00 · ${data.queued} test(s) waiting to be marked${data.timetableRequests ? ` · <a href="#/timetable">${data.timetableRequests} timetable request(s)</a>` : ''}</div>
         ${weekStrip(days, selected)}${agenda(fmtDate(selected), items, 'No lessons scheduled.')}`;
       panel.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => { selected = b.dataset.day; paint(); }));
     } else {
@@ -57,6 +58,7 @@ export function render(el, params, ctx) {
         <li><a href="#/marking">Tests to mark</a><span class="count">${data.queued}</span></li>
         <li><a href="#/marking">Submission exceptions</a><span class="count">${data.exceptions}</span></li>
         <li><a href="#/corrections">Corrections to review</a><span class="count">${data.correctionsToReview}</span></li>
+        <li><a href="#/timetable">Timetable requests</a><span class="count">${data.timetableRequests}</span></li>
       </ul>
       <div class="card-body"><h3>Upcoming SACs</h3>${data.upcomingSacs.length ? `<ul>${data.upcomingSacs.map(s =>
         `<li>${esc(s.studentName)} · ${esc(s.title)} · ${esc(fmtDate(s.date))}</li>`).join('')}</ul>` : '<p class="muted">None recorded.</p>'}</div>`;

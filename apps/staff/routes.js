@@ -6,6 +6,7 @@ const ph = spec => () => import('../../packages/ui/placeholder.js').then(m => m.
 
 export const routes = [
   { id: 'home', label: 'Home', icon: 'home', owner: 'A', roles: STAFF, nav: true, load: () => import('./pages/home.js') },
+  { id: 'timetable', label: 'Timetable', icon: 'calendar-event', owner: 'A', roles: STAFF, nav: true, load: () => import('./pages/timetable.js') },
   { id: 'marking', label: 'Marking', icon: 'checkbox', owner: 'A', roles: STAFF, nav: true, load: () => import('./pages/marking.js') },
   { id: 'records', label: 'Records', icon: 'table', owner: 'A', roles: STAFF, nav: true, load: () => import('./pages/records.js') },
   { id: 'corrections', label: 'Corrections', icon: 'pencil-check', owner: 'A', roles: STAFF, nav: true, load: () => import('./pages/corrections.js') },
@@ -13,9 +14,6 @@ export const routes = [
     title: 'Exam review & targeted practice', step: '9C', owner: 'A',
     points: ['Self-recorded exam data trends (first pass, second pass, checks, score)', 'AI-drafted review per exam, tutor confirms causes and next step', 'Draft targeted practice from W topics; tutor edits before assigning'] }) },
 
-  { id: 'today', label: 'Today', icon: 'calendar-event', owner: 'B', roles: STAFF, nav: true, load: ph({
-    title: 'Today', step: '1-3', owner: 'B', prototype: 'today.js',
-    points: ['Timetable and check-in', 'Pending schedule-change requests', 'Counts that link to marking and messages'] }) },
   { id: 'briefings', label: 'Briefings', icon: 'id-badge-2', owner: 'B', roles: STAFF, load: ph({
     title: 'Student briefings', step: '4', owner: 'B', prototype: 'students.js',
     points: ['Fact card per student from records', 'Upcoming SAC and module gaps', 'AI plan suggestion, tutor adjusts after talking (step 5)'] }) },
@@ -25,9 +23,6 @@ export const routes = [
   { id: 'messages', label: 'Messages', icon: 'message-circle', owner: 'B', roles: STAFF, nav: true, load: ph({
     title: 'Messages', step: '6-7', owner: 'B', prototype: 'messages.js',
     points: ['Paste a WeCom message', 'AI triage and draft reply (uses ctx.api AI wrapper)', 'Schedule-change approval and internal notice'] }) },
-  { id: 'calendar', label: 'Calendar', icon: 'calendar', owner: 'B', roles: STAFF, nav: true, load: ph({
-    title: 'Calendar & Q&A', step: '9', owner: 'B',
-    points: ['Lessons and Q&A sessions in one calendar', 'Confirm Q&A students and question counts'] }) },
   { id: 'report', label: 'Daily report', icon: 'clipboard-list', owner: 'B', roles: STAFF, nav: true, load: ph({
     title: 'Daily report', step: 'Phase 5', owner: 'B', prototype: 'report.js',
     points: ['Auto-counted facts (counts come from the derive engine)', 'Rule-based follow-up nominations, tutor confirms', 'Manager sign-off'] }) },

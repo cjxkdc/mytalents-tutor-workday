@@ -8,6 +8,7 @@
 import * as data from './mock-data.js';
 import * as derive from './derive.js';
 import { db } from './storage.js'; // IndexedDB (default) or Google Sheets, see storage.js
+import * as tt from './timetable.js';
 
 export class ApiError extends Error {
   constructor(code, message, details) { super(message); this.code = code; this.details = details; }
@@ -24,7 +25,6 @@ const pad = n => String(n).padStart(2, '0');
 const nowIso = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
 let seqCounter = 0;
 const nextSeq = () => Date.now() * 1000 + (seqCounter++ % 1000);
-const weekday = iso => { const d = new Date(iso + 'T00:00:00').getDay(); return d === 0 ? 7 : d; };
 const validTime = s => /^\d{2}:\d{2}$/.test(s || '') && +s.slice(0, 2) < 24 && +s.slice(3) < 60;
 const validDate = s => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return false;
@@ -55,6 +55,7 @@ async function seedTx(t, force) {
   for (const r of data.seedResults) await t.put('results', r);
   for (const s of data.seedSubmissions) await t.put('submissions', s);
   for (const [i, r] of data.seedExamRecords.entries()) await t.put('examRecords', { id: `er-seed-${i}`, ...r });
+  for (const c of data.seedLessonChanges) await t.put('lessonChanges', c);
 }
 let seeded = null;
 function ensureSeeded() {
@@ -65,6 +66,63 @@ async function load(store, index, key) { await ensureSeeded(); return db.getAll(
 async function tx(names, fn) { await ensureSeeded(); return db.transact(names, fn); }
 
 const studentById = id => data.students.find(s => s.id === id);
+const lessonById = id => data.timetable.find(t => t.id === id);
+const TT_STORES = ['lessonChanges', 'attendance', 'audit'];
+const MAX_RANGE_DAYS = 42;
+
+// ---------- timetable helpers (lessons only; Q&A sessions are not part of the timetable) ----------
+const lessonsFrom = (from, to, changes, attendance) => tt.lessonsBetween(from, to, { template: data.timetable, changes, attendance });
+const named = o => ({ ...o, studentName: studentById(o.studentId).name });
+function checkRange(from, to) {
+  if (!validDate(from) || !validDate(to) || from > to) throw new ApiError('VALIDATION', 'Give a valid date range');
+  if (tt.datesBetween(from, to).length > MAX_RANGE_DAYS) throw new ApiError('VALIDATION', `At most ${MAX_RANGE_DAYS} days at a time`);
+}
+function checkTo(to, isExtra) {
+  const errors = [];
+  if (!to || !validDate(to.date)) errors.push('date');
+  if (!validTime(to?.start)) errors.push('start');
+  if (!validTime(to?.end)) errors.push('end');
+  if (isExtra) {
+    if (!data.teachers.includes(to?.teacher)) errors.push('teacher');
+    if (!['onsite', 'online'].includes(to?.mode)) errors.push('mode');
+    else if (to.mode === 'onsite' && !data.rooms.includes(to?.room)) errors.push('room');
+  }
+  if (errors.length) throw new ApiError('VALIDATION', 'Check the highlighted fields', errors);
+  if (to.date < data.TODAY) throw new ApiError('VALIDATION', 'The new date has already passed', ['date']);
+}
+// The regular lesson `occId` on its original date, as currently scheduled.
+function findRegular(occId, changes, attendance) {
+  const [lessonId, date] = String(occId || '').split('|');
+  const t = lessonById(lessonId);
+  if (!t || !validDate(date) || tt.weekdayOf(date) !== t.day) throw new ApiError('NOT_FOUND', 'Lesson not found');
+  return lessonsFrom(date, date, changes, attendance).find(o => o.id === occId && o.date === date);
+}
+// Checks shared by student requests and tutor changes on a regular lesson. Returns the change body.
+function buildChange({ occId, kind, to, reason }, changes, attendance) {
+  if (!tt.STUDENT_KINDS.includes(kind)) throw new ApiError('VALIDATION', 'Choose leave, online or reschedule', ['kind']);
+  if (typeof reason !== 'string' || !reason.trim()) throw new ApiError('VALIDATION', 'Give a reason', ['reason']);
+  const lesson = findRegular(occId, changes, attendance);
+  if (lesson.date < data.TODAY) throw new ApiError('INVALID_STATE', 'This lesson has already passed');
+  if (changes.some(c => c.occId === occId && tt.isActive(c))) throw new ApiError('INVALID_STATE', 'This lesson already has a pending request or an approved change');
+  if (attendance.some(a => a.occId === occId)) throw new ApiError('INVALID_STATE', 'Attendance is already recorded for this lesson');
+  if (kind === 'online' && lesson.mode === 'online') throw new ApiError('INVALID_STATE', 'This lesson is already online');
+  let next = null;
+  if (kind === 'reschedule') {
+    checkTo(to, false);
+    if (to.date === lesson.date && to.start === lesson.start && to.end === lesson.end) throw new ApiError('VALIDATION', 'Pick a different time', ['date']);
+    const problems = tt.slotProblems({ studentId: lesson.studentId, date: to.date, start: to.start, end: to.end, ignoreId: occId },
+      lessonsFrom(to.date, to.date, changes, attendance), data.policy.timetable);
+    if (problems.length) throw new ApiError('VALIDATION', problems.join('; '), problems);
+    next = { date: to.date, start: to.start, end: to.end };
+  }
+  return { lesson, body: { occId, lessonId: lesson.lessonId, studentId: lesson.studentId, date: lesson.date, kind, to: next, reason: reason.trim() } };
+}
+// Re-check a pending request at decision time: the timetable may have changed since it was sent.
+const recheck = (c, changes, attendance) => buildChange(c, changes.filter(x => x.id !== c.id), attendance);
+const withNotice = (c, lesson) => ({ ...c, notice: { to: c.kind === 'extra' ? c.to.teacher : lesson.teacher, text: tt.noticeText(c, lesson, studentById(c.studentId).name) } });
+// Students see their own request and the decision, not the staff notice.
+const strip = ({ notice, ...c }) => c;
+const changeView = c => ({ ...c, studentName: studentById(c.studentId).name, lesson: c.lessonId ? lessonById(c.lessonId) : null });
 
 export function createMockApi(user) {
   const isStaff = STAFF_ROLES.includes(user?.role);
@@ -83,16 +141,16 @@ export function createMockApi(user) {
 
     async getStaffHome() {
       requireStaff();
-      const [subs, corrections] = await Promise.all([load('submissions'), load('corrections')]);
-      const day = weekday(data.TODAY);
-      const withName = t => ({ ...t, studentName: studentById(t.studentId).name });
+      const [subs, corrections, changes, attendance] = await Promise.all([load('submissions'), load('corrections'), load('lessonChanges'), load('attendance')]);
+      const week = lessonsFrom(data.TODAY, tt.addDays(data.TODAY, 6), changes, attendance).map(o => ({ ...named(o), day: tt.weekdayOf(o.date) }));
       return {
         today: data.TODAY,
         queued: subs.filter(s => s.status === 'queued').length,
         exceptions: subs.filter(s => s.status === 'exception').length,
         correctionsToReview: corrections.filter(c => c.status === 'submitted').length,
-        week: data.timetable.map(withName),
-        todaySessions: data.timetable.filter(t => t.day === day).map(withName).sort((a, b) => a.start.localeCompare(b.start)),
+        timetableRequests: changes.filter(c => c.status === 'pending').length,
+        week,
+        todaySessions: week.filter(o => o.date === data.TODAY && tt.happening(o)),
         upcomingSacs: data.students.filter(s => s.sac).map(s => ({ studentId: s.id, studentName: s.name, ...s.sac })),
       };
     },
@@ -252,18 +310,180 @@ export function createMockApi(user) {
 
     async listAudit() { requireStaff(); return (await load('audit')).sort((a, b) => b.seq - a.seq); },
 
+    // ---------- staff: timetable ----------
+    // Lessons in [from, to] (default: this Monday to Sunday), pending requests and recent decisions.
+    async getTimetable({ from, to } = {}) {
+      requireStaff();
+      from = from || tt.mondayOf(data.TODAY); to = to || tt.addDays(from, 6);
+      checkRange(from, to);
+      const [changes, attendance] = await Promise.all([load('lessonChanges'), load('attendance')]);
+      const lessons = lessonsFrom(from, to, changes, attendance).map(named);
+      const pending = changes.filter(c => c.status === 'pending').map(c => {
+        let problems = [];
+        try { recheck(c, changes, attendance); } catch (e) { problems = [e.message]; }
+        return { ...changeView(c), problems };
+      }).sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
+      return {
+        today: data.TODAY, from, to, rules: data.policy.timetable, teachers: data.teachers, rooms: data.rooms,
+        students: data.students.map(s => ({ id: s.id, name: s.name })),
+        days: tt.datesBetween(from, to).map(date => {
+          const ls = lessons.filter(o => o.date === date);
+          return { date, weekday: tt.weekdayOf(date), lessons: ls, summary: tt.attendanceSummary(ls) };
+        }),
+        pending,
+        recent: changes.filter(c => c.status !== 'pending').map(changeView)
+          .sort((a, b) => (b.decidedAt || b.requestedAt).localeCompare(a.decidedAt || a.requestedAt)).slice(0, 20),
+      };
+    },
+
+    // A tutor changes a lesson directly: { occId, kind: leave|online|reschedule, to?, reason }
+    // or adds one: { kind: 'extra', studentId, to: { date, start, end, teacher, mode, room }, reason }. Takes effect at once.
+    async changeLesson(input = {}) {
+      requireStaff();
+      const c = await tx(TT_STORES, async t => {
+        const [changes, attendance] = await Promise.all([t.getAll('lessonChanges'), t.getAll('attendance')]);
+        const id = uid('lc');
+        let body, lesson;
+        if (input.kind === 'extra') {
+          if (!studentById(input.studentId)) throw new ApiError('VALIDATION', 'Choose a student', ['studentId']);
+          if (typeof input.reason !== 'string' || !input.reason.trim()) throw new ApiError('VALIDATION', 'Give a reason', ['reason']);
+          checkTo(input.to, true);
+          const to = { date: input.to.date, start: input.to.start, end: input.to.end, teacher: input.to.teacher, mode: input.to.mode,
+            room: input.to.mode === 'online' ? 'Online' : input.to.room };
+          const problems = tt.slotProblems({ studentId: input.studentId, ...to }, lessonsFrom(to.date, to.date, changes, attendance), data.policy.timetable);
+          if (problems.length) throw new ApiError('VALIDATION', problems.join('; '), problems);
+          body = { occId: tt.extraOccId(id), lessonId: null, studentId: input.studentId, date: to.date, kind: 'extra', to, reason: input.reason.trim() };
+          lesson = { ...to };
+        } else {
+          ({ body, lesson } = buildChange(input, changes, attendance));
+        }
+        const at = nowIso();
+        const rec = withNotice({ id, ...body, source: 'staff', status: 'approved', requestedBy: user.name, requestedAt: at,
+          decidedBy: user.name, decidedAt: at, decisionNote: '', version: uid('cv') }, lesson);
+        await t.put('lessonChanges', rec);
+        await t.put('audit', auditRec('timetable-change', { changeId: id, occId: rec.occId, kind: rec.kind, to: rec.to, reason: rec.reason }));
+        return rec;
+      });
+      changed();
+      return changeView(c);
+    },
+
+    // Approve or decline a student's request. Declining needs a note; approving re-checks the timetable.
+    async decideLessonChange(id, { approve, note, version } = {}) {
+      requireStaff();
+      if (typeof approve !== 'boolean') throw new ApiError('VALIDATION', 'approve must be true or false');
+      if (!approve && !note?.trim()) throw new ApiError('VALIDATION', 'Tell the student why', ['note']);
+      const c = await tx(TT_STORES, async t => {
+        const c = await t.get('lessonChanges', id);
+        if (!c) throw new ApiError('NOT_FOUND', 'Request not found');
+        if (c.version !== version) throw new ApiError('CONFLICT', 'This request changed since you opened it. Refresh and decide again.');
+        if (c.status !== 'pending') throw new ApiError('INVALID_STATE', `Request is already ${c.status}`);
+        let next = { ...c, status: approve ? 'approved' : 'declined', decidedBy: user.name, decidedAt: nowIso(), decisionNote: note?.trim() || '', version: uid('cv') };
+        if (approve) {
+          const [changes, attendance] = await Promise.all([t.getAll('lessonChanges'), t.getAll('attendance')]);
+          next = withNotice(next, recheck(c, changes, attendance).lesson);
+        }
+        await t.put('lessonChanges', next);
+        await t.put('audit', auditRec(approve ? 'approve-timetable-request' : 'decline-timetable-request', { changeId: id, note: next.decisionNote || null }));
+        return next;
+      });
+      changed();
+      return changeView(c);
+    },
+
+    // Undo an approved change: the lesson goes back to the weekly template. Blocked once attendance is recorded.
+    async revokeLessonChange(id, { reason, version } = {}) {
+      requireStaff();
+      if (!reason?.trim()) throw new ApiError('VALIDATION', 'Give a reason', ['reason']);
+      await tx(TT_STORES, async t => {
+        const c = await t.get('lessonChanges', id);
+        if (!c) throw new ApiError('NOT_FOUND', 'Change not found');
+        if (c.version !== version) throw new ApiError('CONFLICT', 'This change was updated since you opened it. Refresh and retry.');
+        if (c.status !== 'approved') throw new ApiError('INVALID_STATE', `Change is ${c.status}`);
+        if (await t.get('attendance', c.occId)) throw new ApiError('INVALID_STATE', 'Attendance is already recorded for this lesson');
+        await t.put('lessonChanges', { ...c, status: 'revoked', revokedBy: user.name, revokedAt: nowIso(), revokeReason: reason.trim(), version: uid('cv') });
+        await t.put('audit', auditRec('revoke-timetable-change', { changeId: id, reason: reason.trim() }));
+      });
+      changed();
+    },
+
+    // status: present | late | absent, or null to clear. Only for lessons that take place, today or earlier.
+    async markAttendance(occId, date, status) {
+      requireStaff();
+      if (status !== null && !tt.ATTENDANCE.includes(status)) throw new ApiError('VALIDATION', 'Choose present, late or absent');
+      if (!validDate(date)) throw new ApiError('VALIDATION', 'Give a valid date');
+      if (date > data.TODAY) throw new ApiError('INVALID_STATE', 'This lesson has not happened yet');
+      await tx(TT_STORES, async t => {
+        const [changes, attendance] = await Promise.all([t.getAll('lessonChanges'), t.getAll('attendance')]);
+        const lesson = lessonsFrom(date, date, changes, attendance).find(o => o.id === occId && tt.happening(o));
+        if (!lesson) throw new ApiError('NOT_FOUND', 'No lesson takes place in that slot');
+        const previous = lesson.attendance?.status || null;
+        if (status === null) await t.del('attendance', occId);
+        else await t.put('attendance', { id: occId, occId, studentId: lesson.studentId, date, status, markedBy: user.name, markedAt: nowIso() });
+        await t.put('audit', auditRec('attendance', { occId, date, status, previous }));
+      });
+      changed();
+    },
+
+    // ---------- student: timetable ----------
+    async getMyTimetable({ from, to } = {}) {
+      const sid = requireStudent();
+      from = from || tt.mondayOf(data.TODAY); to = to || tt.addDays(from, 6);
+      checkRange(from, to);
+      const [changes, attendance] = await Promise.all([load('lessonChanges'), load('attendance')]);
+      const lessons = lessonsFrom(from, to, changes, attendance).filter(o => o.studentId === sid)
+        .map(o => ({ ...o, change: o.change && strip(o.change), pending: o.pending && strip(o.pending) }));
+      return {
+        today: data.TODAY, from, to, rules: data.policy.timetable,
+        days: tt.datesBetween(from, to).map(date => ({ date, weekday: tt.weekdayOf(date), lessons: lessons.filter(o => o.date === date) })),
+        requests: changes.filter(c => c.studentId === sid && c.source === 'student').map(strip)
+          .map(c => ({ ...c, lesson: c.lessonId ? lessonById(c.lessonId) : null }))
+          .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)),
+      };
+    },
+
+    // { occId, kind: leave|online|reschedule, to?: { date, start, end }, reason }. Becomes pending; a tutor decides.
+    async requestLessonChange(input = {}) {
+      const sid = requireStudent();
+      const c = await tx(TT_STORES, async t => {
+        const [changes, attendance] = await Promise.all([t.getAll('lessonChanges'), t.getAll('attendance')]);
+        const [lessonId] = String(input.occId || '').split('|');
+        if (lessonById(lessonId)?.studentId !== sid) throw new ApiError('NOT_FOUND', 'Lesson not found');
+        const { body } = buildChange(input, changes, attendance);
+        const rec = { id: uid('lc'), ...body, source: 'student', status: 'pending', requestedBy: user.name, requestedAt: nowIso(), version: uid('cv') };
+        await t.put('lessonChanges', rec);
+        await t.put('audit', auditRec('timetable-request', { changeId: rec.id, occId: rec.occId, kind: rec.kind }));
+        return rec;
+      });
+      changed();
+      return strip(c);
+    },
+
+    async withdrawLessonChange(id, version) {
+      const sid = requireStudent();
+      await tx(TT_STORES, async t => {
+        const c = await t.get('lessonChanges', id);
+        if (!c || c.studentId !== sid) throw new ApiError('NOT_FOUND', 'Request not found');
+        if (c.version !== version) throw new ApiError('CONFLICT', 'This request changed. Refresh to see its status.');
+        if (c.status !== 'pending') throw new ApiError('INVALID_STATE', `Request is already ${c.status}`);
+        await t.put('lessonChanges', { ...c, status: 'withdrawn', version: uid('cv') });
+        await t.put('audit', auditRec('withdraw-timetable-request', { changeId: id }));
+      });
+      changed();
+    },
+
     // ---------- student ----------
     async getMyHome() {
       const sid = requireStudent();
       const s = studentById(sid);
-      const [results, subs] = await Promise.all([load('results', 'studentId', sid), load('submissions')]);
-      const day = weekday(data.TODAY);
-      const lessons = data.timetable.filter(t => t.studentId === sid);
+      const [results, subs, changes, attendance] = await Promise.all([load('results', 'studentId', sid), load('submissions'), load('lessonChanges'), load('attendance')]);
+      const lessons = lessonsFrom(data.TODAY, tt.addDays(data.TODAY, 6), changes, attendance)
+        .filter(o => o.studentId === sid).map(o => ({ ...strip(o), change: o.change && strip(o.change), day: tt.weekdayOf(o.date) }));
       const currentTest = data.tests.find(t => t.moduleId === s.currentModule);
       const attempts = currentTest ? derive.attemptsOf(results, sid, currentTest.id) : [];
       return {
         student: s, today: data.TODAY,
-        todayLessons: lessons.filter(t => t.day === day),
+        todayLessons: lessons.filter(o => o.date === data.TODAY && tt.happening(o)),
         weekLessons: lessons,
         currentModule: data.modules.find(m => m.id === s.currentModule),
         currentTest: currentTest ? { id: currentTest.id, name: currentTest.name, attempts: attempts.length,

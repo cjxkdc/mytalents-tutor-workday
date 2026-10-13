@@ -2,7 +2,7 @@
 // Reference data (course, tests, students, timetable, policy) is read-only here;
 // mutable facts are copied into IndexedDB on first run (see mock-api.js).
 
-export const SEED_VERSION = 4;
+export const SEED_VERSION = 5;
 export const TODAY = '2026-10-13';
 
 export const users = {
@@ -60,18 +60,22 @@ export const students = [
   { id: 's06', name: 'Frank Zhou', studentNo: 'S-24006', year: 11, school: 'Camberwell High (mock)', currentModule: 'M1', completedModules: [], sac: null },
 ];
 
-// Weekly timetable. day: 1 = Monday ... 5 = Friday.
+// Weekly lesson template (reference data). day: 1 = Monday ... 5 = Friday.
+// Group lessons share a teacher and room. Changes and attendance are facts, see seedLessonChanges.
+const L = (id, studentId, day, start, end, teacher, room, mode = 'onsite') => ({ id, studentId, day, start, end, teacher, room, mode });
 export const timetable = [
-  { studentId: 's01', day: 2, start: '16:00', end: '18:00', teacher: 'Ms Park', room: 'Room A', mode: 'onsite' },
-  { studentId: 's01', day: 4, start: '16:00', end: '17:30', teacher: 'Ms Park', room: 'Room A', mode: 'onsite' },
-  { studentId: 's02', day: 2, start: '16:00', end: '17:00', teacher: 'Mr Singh', room: 'Online', mode: 'online' },
-  { studentId: 's03', day: 2, start: '16:30', end: '18:00', teacher: 'Ms Park', room: 'Room A', mode: 'onsite' },
-  { studentId: 's03', day: 5, start: '16:00', end: '18:00', teacher: 'Ms Park', room: 'Room A', mode: 'onsite' },
-  { studentId: 's04', day: 2, start: '16:00', end: '18:00', teacher: 'Mr Singh', room: 'Room B', mode: 'onsite' },
-  { studentId: 's05', day: 2, start: '16:00', end: '17:30', teacher: 'Ms Park', room: 'Room A', mode: 'onsite' },
-  { studentId: 's05', day: 3, start: '16:00', end: '17:30', teacher: 'Ms Park', room: 'Room A', mode: 'onsite' },
-  { studentId: 's06', day: 2, start: '17:00', end: '18:00', teacher: 'Mr Singh', room: 'Online', mode: 'online' },
+  L('L01', 's01', 2, '16:00', '18:00', 'Ms Park', 'Room A'),
+  L('L02', 's01', 4, '16:00', '17:30', 'Ms Park', 'Room A'),
+  L('L03', 's02', 2, '16:00', '17:00', 'Mr Singh', 'Online', 'online'),
+  L('L04', 's03', 2, '16:30', '18:00', 'Ms Park', 'Room A'),
+  L('L05', 's03', 5, '16:00', '18:00', 'Ms Park', 'Room A'),
+  L('L06', 's04', 2, '16:00', '18:00', 'Mr Singh', 'Room B'),
+  L('L07', 's05', 2, '16:00', '17:30', 'Ms Park', 'Room A'),
+  L('L08', 's05', 3, '16:00', '17:30', 'Ms Park', 'Room A'),
+  L('L09', 's06', 2, '17:00', '18:00', 'Mr Singh', 'Online', 'online'),
 ];
+export const teachers = ['Ms Park', 'Mr Singh'];
+export const rooms = ['Room A', 'Room B'];
 
 // Proposed rules - every number is a demo default awaiting centre sign-off.
 export const policy = {
@@ -88,6 +92,7 @@ export const policy = {
   bands: { green: 80, amber: 60 },
   passMark: 70,                   // suggestion only; the tutor decides on a Retest
   upload: { maxPages: 6, maxPageBytes: 3_000_000, maxTotalBytes: 12_000_000, maxLongEdge: 1600 },
+  timetable: { shiftStart: '14:00', shiftEnd: '19:00', weekdaysOnly: true },
 };
 
 // ---- Seed facts (copied into IndexedDB on first run) ----
@@ -133,4 +138,21 @@ export const seedExamRecords = [
   { studentId: 's03', date: '2026-10-06', paper: 'VCAA 2022 Exam 1 (mock)', start: '16:00', endFirst: '16:45', endSecond: '17:00', checks: 2, score: 35, outOf: 40 },
   { studentId: 's05', date: '2026-09-01', paper: 'Module 1 Test', start: '16:10', endFirst: '16:38', endSecond: '16:41', checks: 0, score: 14, outOf: 18 },
   { studentId: 's05', date: '2026-09-22', paper: 'Module 2 Test', start: '16:05', endFirst: '16:30', endSecond: '16:32', checks: 0, score: 11, outOf: 18 },
+];
+
+// Timetable change facts. Students request; a tutor decides (or changes directly, source 'staff').
+// One pending request is in Chinese on purpose: messages from families often are.
+const chg = (id, lessonId, studentId, date, kind, reason, extra) => ({
+  id, occId: `${lessonId}|${date}`, lessonId, studentId, date, kind, to: null, reason, version: `cv-seed-${id}`, ...extra,
+});
+export const seedLessonChanges = [
+  chg('lc-seed-1', 'L08', 's05', '2026-10-14', 'leave', 'School excursion to the Science Museum', {
+    source: 'student', status: 'approved', requestedBy: 'Emily Liu', requestedAt: '2026-10-11T19:12:00',
+    decidedBy: 'Ms Park', decidedAt: '2026-10-12T14:20:00', decisionNote: '',
+    notice: { to: 'Ms Park', text: '[Timetable] Emily Liu: Wed 14 Oct 16:00-17:30 (Room A) is cancelled - student on leave. Reason: School excursion to the Science Museum' } }),
+  chg('lc-seed-2', 'L02', 's01', '2026-10-15', 'online', '周四有点感冒，不想传染给同学，可以改成线上吗？', {
+    source: 'student', status: 'pending', requestedBy: 'Amy Chen', requestedAt: '2026-10-13T09:05:00' }),
+  chg('lc-seed-3', 'L05', 's03', '2026-10-16', 'reschedule', 'Friday clashes with a school SAC revision class', {
+    to: { date: '2026-10-15', start: '16:00', end: '18:00' },
+    source: 'student', status: 'pending', requestedBy: 'Chloe Wang', requestedAt: '2026-10-12T20:40:00' }),
 ];

@@ -3,8 +3,8 @@
 // readwrite transaction and a second tab sees the first tab's committed result.
 
 const DB_NAME = 'tutor-workday-demo';
-const DB_VERSION = 1;
-export const STORES = ['meta', 'results', 'submissions', 'pages', 'corrections', 'examRecords', 'audit'];
+const DB_VERSION = 2;
+export const STORES = ['meta', 'results', 'submissions', 'pages', 'corrections', 'examRecords', 'audit', 'lessonChanges', 'attendance'];
 
 let dbPromise = null;
 
