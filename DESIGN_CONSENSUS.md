@@ -127,7 +127,7 @@ MyTalents 的 hackathon 产品用于减少教学管理中的重复录入，并�
 | 数据存储 | IndexedDB 保存演示业务数据与图片；localStorage 保存演示身份 |
 | 后端 | 尚无已接通的真实业务后端；Python 服务只是静态文件开发服务器 |
 | 集成 | 未接通真实 OCR、Google 同步、企业微信或正式身份认证 |
-| Google Sheets 存储（`a/sheets-db` 分支，2026-10-13） | 已实现 Apps Script 服务（`backend/google-apps-script/Code.gs`）、浏览器适配器（`packages/contract/sheets-db.js`）和存储选择（`storage.js`）；用本地模拟器跑通 15 项测试。**尚未部署到真实 Google 账号**，需要用户按 `SETUP.md` 操作后才算接通；默认仍为 IndexedDB |
+| Google Sheets 存储（2026-10-13 合并入 main） | 已实现 Apps Script 服务（`backend/google-apps-script/Code.gs`）、浏览器适配器（`packages/contract/sheets-db.js`）和存储选择（`storage.js`）；用本地模拟器跑通 15 项测试。**尚未部署到真实 Google 账号**，需要用户按 `SETUP.md` 操作后才算接通；默认仍为 IndexedDB |
 
 README 和现有代码包含上传、人工批改、三表推导、进度、考试记录、错题和订正等演示功能。此处是代码与文档检查结果，不是完整浏览器验收结论。
 
