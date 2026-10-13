@@ -80,7 +80,7 @@ MyTalents 的 hackathon 产品用于减少教学管理中的重复录入，并�
 ### 数据库（v1.3 确认，v1.4 修订连接方式）
 
 - 2026-10-13 用户决定：**Google Sheets 直接作为数据库**。
-- v1.4 用户决定：**Sheets 由 Robin 的 TypeScript 后端连接**（分支 `codex/backend-automation-core`：服务账号调用 Sheets API，每次事务一次 `batchUpdate`，单实例部署）。后端及其 Sheets repository 由 Robin 负责。
+- v1.4 用户决定：**Sheets 由 Robin 的 TypeScript 后端连接**（代码在 `backend/`，2026-10-13 已由另一会话合并入 main：服务账号调用 Sheets API，每次事务一次 `batchUpdate`，单实例部署）。后端及其 Sheets repository 由 Robin 负责。
 - v1.3 的 Apps Script 方案作废，相关代码（`backend/google-apps-script/`、`packages/contract/sheets-db.js`、`storage.js`）已从 main 移除，只保留在 Git 历史中。
 - 在前端接入该后端的 HTTP 接口之前，两个 portal 仍使用浏览器 IndexedDB 演示数据。前端 HTTP 适配器是待安排的任务，字段对应见该分支的 `packages/contract/BACKEND.md`。
 - 演示访问控制、正式认证等限制仍按“部署与权限”执行；不能把本地数据演示描述成已接通的 Sheets 同步。
@@ -122,7 +122,7 @@ MyTalents 的 hackathon 产品用于减少教学管理中的重复录入，并�
 | 数据存储 | IndexedDB 保存演示业务数据与图片；localStorage 保存演示身份 |
 | 后端 | 尚无已接通的真实业务后端；Python 服务只是静态文件开发服务器 |
 | 集成 | 未接通真实 OCR、Google 同步、企业微信或正式身份认证 |
-| Google Sheets 存储 | v1.3 的 Apps Script 方案已按 v1.4 从 main 移除。Robin 的 TypeScript 后端在 `codex/backend-automation-core` 分支，尚未合并、尚未与前端连通；portal 仍用 IndexedDB |
+| Google Sheets 存储 | v1.3 的 Apps Script 方案已按 v1.4 从 main 移除。Robin 的 TypeScript 后端已在 main 的 `backend/`，**尚未部署、尚未与前端连通，也还没有老师审核状态**；portal 仍用 IndexedDB |
 
 README 和现有代码包含上传、人工批改、三表推导、进度、考试记录、错题和订正等演示功能。此处是代码与文档检查结果，不是完整浏览器验收结论。
 
@@ -164,7 +164,7 @@ README 和现有代码包含上传、人工批改、三表推导、进度、考�
 ### 已决定：与 `codex/backend-automation-core` 的冲突（v1.4）
 
 1. **Sheets 接入**：采用 Robin 的 TypeScript 后端方案（见“数据库”）。
-2. **老师审核**：**要老师审核**。AI 批改或扫描提取的结果先保存为待审核，老师确认后才成为正式成绩并更新错题、反馈和三表。该分支 `BACKEND.md` 中“导入或 AI 扫描结果自动成为正式成绩，没有老师审核环节”的写法与此冲突，**合并前必须改为带审核状态**。老师本人手工录入或确认的成绩本身即为审核结果，不需要再审一次；每周作业选择题的自动判分仍不需要审核（见“Modules 与自动批改”）。
+2. **老师审核**：**要老师审核**。AI 批改或扫描提取的结果先保存为待审核，老师确认后才成为正式成绩并更新错题、反馈和三表。`packages/contract/BACKEND.md` 中“导入或 AI 扫描结果自动成为正式成绩，没有老师审核环节”的写法与此冲突。该后端已在 v1.4 记录前被合并入 main，**前端接入该后端之前，必须先为 AI 批改／扫描结果加入待审核 → 老师确认的状态**；在此之前不得把它的自动入档行为当作已批准流程演示。老师本人手工录入或确认的成绩本身即为审核结果，不需要再审一次；每周作业选择题的自动判分仍不需要审核（见“Modules 与自动批改”）。
 
 ### 管理与其他模块
 

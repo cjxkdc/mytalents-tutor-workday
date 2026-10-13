@@ -2,6 +2,11 @@
 
 What both people build against. Owner: A. Changes go through a PR reviewed by B.
 
+Backend integration proposal: [BACKEND.md](BACKEND.md) and [openapi.json](openapi.json).
+The sections below continue to describe the existing IndexedDB demo. The backend-only change follows
+the user's later requirement to process valid imports automatically without a teacher approval gate;
+its HTTP adapter and policy differences are explicitly documented in the addendum.
+
 ## 1. Page modules
 
 Each page is an ES module in `apps/<app>/pages/` and is registered in `apps/<app>/routes.js`:
@@ -217,5 +222,5 @@ AI output will always be stored as a pending suggestion; only a tutor action tur
 - localStorage: only the demo identity per app.
 - Both apps share the database because they run on the same origin. **This is demo-only.** In production
   each app talks only to the backend, which scopes student requests to the signed-in student.
-- The shared Google Sheets database is reached through the TypeScript backend (branch
-  `codex/backend-automation-core`, see its `BACKEND.md`). The portals are not connected to it yet.
+- The shared Google Sheets database is reached through the TypeScript backend in `backend/` (see
+  [BACKEND.md](BACKEND.md)). The portals are not connected to it yet.
