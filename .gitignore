@@ -1,0 +1,26 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local dependencies and generated output
+node_modules/
+.venv/
+__pycache__/
+dist/
+build/
+.next/
+coverage/
+*.log
+
+# Private local data and scratch files
+data/private/
+uploads/
+work/
+
+# Editor and operating-system files
+.idea/
+.DS_Store
+Thumbs.db
