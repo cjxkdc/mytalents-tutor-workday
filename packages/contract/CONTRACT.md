@@ -12,8 +12,8 @@ its HTTP adapter and policy differences are explicitly documented in the addendu
 Each page is an ES module in `apps/<app>/pages/` and is registered in `apps/<app>/routes.js`:
 
 ```js
-{ id: 'messages', label: 'Messages', icon: 'message-circle', owner: 'B', roles: ['tutor', 'manager'], nav: true,
-  load: () => import('./pages/messages.js') }
+{ id: 'report', label: 'Daily report', icon: 'clipboard-list', owner: 'B', roles: ['tutor', 'manager'], nav: true,
+  load: () => import('./pages/report.js') }
 ```
 
 - Access: the router controls who can open a page (`roles`); the API controls who can read or change data.
@@ -203,8 +203,7 @@ the store in `onupgradeneeded`. Bumping `SEED_VERSION` in `mock-data.js` **wipes
 browser that opens the app. Agree these changes with the storage owner in the PR.
 
 ### To be added by B (propose here first)
-Messages and triage (a message asking for a lesson change should end up as a timetable change, via
-`changeLesson`), daily report and sign-off (arrivals from the Timetable `summary`), parent reports,
+Daily report and sign-off (arrivals from the Timetable `summary`), parent reports,
 student management, policy approval, AI quality. Put each new method in this file with
 inputs, outputs and errors before building against it.
 

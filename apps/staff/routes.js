@@ -20,9 +20,6 @@ export const routes = [
   { id: 'students', label: 'Students', icon: 'users', owner: 'B', roles: STAFF, load: ph({
     title: 'Student management', step: '9A/B', owner: 'B',
     points: ['Profiles and parent contacts', 'Current module and Demo checks (tutor decides)', 'SAC dates and scope'] }) },
-  { id: 'messages', label: 'Messages', icon: 'message-circle', owner: 'B', roles: STAFF, nav: true, load: ph({
-    title: 'Messages', step: '6-7', owner: 'B', prototype: 'messages.js',
-    points: ['Paste a WeCom message', 'AI triage and draft reply (uses ctx.api AI wrapper)', 'Schedule-change approval and internal notice'] }) },
   { id: 'report', label: 'Daily report', icon: 'clipboard-list', owner: 'B', roles: STAFF, nav: true, load: ph({
     title: 'Daily report', step: 'Phase 5', owner: 'B', prototype: 'report.js',
     points: ['Auto-counted facts (counts come from the derive engine)', 'Rule-based follow-up nominations, tutor confirms', 'Manager sign-off'] }) },

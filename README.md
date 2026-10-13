@@ -54,7 +54,7 @@ coordinate follow-up work, and make daily progress easier to see.
 | --- | --- | --- |
 | Teacher portal | Test marking/review, records (Exhibits 1-3), corrections | Working (demo) |
 | | Timetable: whiteboard by room, attendance, change requests and direct changes, extra lessons, WeCom notice text | Working (demo) |
-| | Work WeChat message handling, daily reports, student briefings, student management | Placeholders (owner B) |
+| | Daily reports, student briefings, student management (messages stay in WeChat; no message centre) | Placeholders (owner B) |
 | Manager access | Teacher capabilities plus daily report review and sign-off, policy approval | Placeholders (owner B) |
 | Student portal | Upload scanned papers, mistake bank, record exam data, view learning progress | Working (demo) |
 | | Timetable: weekly lessons, request leave / online / reschedule | Working (demo) |
