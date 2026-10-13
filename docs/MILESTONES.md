@@ -41,6 +41,11 @@ CI 有两条：`Backend checks`（Robin）和 `Portal checks`（语法检查 + �
 
 **验收**：同一组 API（读学生、读试卷）在 mock 和 Sheets 两种模式下结果一致；repository 有单元测试。
 
+**状态（2026-10-13，演示版，共识 v1.5）**：portal 通过 `storage.js` 在 IndexedDB／Google Sheet（Apps Script）／浏览器内模拟 Sheet 之间切换，
+同一套 API 和业务规则；每个事实表一个 tab（含 Timetable 的 `lessonChanges`、`attendance`），扫描件存 Drive；
+另写 `View - Exhibit 1–3` 和当天课表 tab 供人查看；模拟器 23 项测试通过。待用户按 SETUP.md 部署到自己的 Google 账号后才算真正接通。
+Robin 的 TypeScript 后端是后续正式版。
+
 ### M2 · 推导引擎、API 和 Portal 外壳
 **负责人**：A。**这是交接点**：M2 结束后 B 的模块全部基于它开发。
 **目标**：前端不再读本地 mock，而是读后端 API；三个角色的页面外壳到位。

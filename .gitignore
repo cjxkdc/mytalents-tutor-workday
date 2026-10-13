@@ -28,3 +28,5 @@ work/
 .DS_Store
 Thumbs.db
 
+# Local storage config (Sheets web app URL and token)
+packages/contract/config.local.json

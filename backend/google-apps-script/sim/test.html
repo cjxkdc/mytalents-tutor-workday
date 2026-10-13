@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sheets storage tests</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 24px; color: #0f1e3d; background: #fff; }
+    li.pass::marker { content: '✔ '; color: #15803d; }
+    li.fail::marker { content: '✘ '; color: #c0262d; }
+    li.fail { color: #c0262d; }
+    pre { background: #eef4fd; padding: 12px; overflow-x: auto; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Sheets storage tests</h1>
+  <p>Runs the real <code>Code.gs</code> against an in-memory spreadsheet. Open with <code>?storage=sim</code>.</p>
+  <p id="summary">Running…</p>
+  <ul id="results"></ul>
+  <h2>results tab (first rows)</h2>
+  <pre id="sheet"></pre>
+  <script type="module" src="test.js"></script>
+</body>
+</html>

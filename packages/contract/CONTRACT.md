@@ -72,13 +72,13 @@ Exception: `subscribe(fn)` is synchronous and returns the unsubscribe function.
 
 | code | When |
 |---|---|
-| `FORBIDDEN` | Wrong role, or a student asking for someone else's data |
+| `FORBIDDEN` | Wrong role, a student asking for someone else's data, or a wrong Sheets token |
 | `NOT_FOUND` | Unknown id |
 | `VALIDATION` | Bad input. `details` lists the fields or `{ qNo, message }` items |
 | `INVALID_STATE` | Action not allowed in the record's current status |
 | `REASON_REQUIRED` | Replacing existing results without a reason |
 | `CONFLICT` | The record changed since the caller loaded it (stale version). Refresh and retry |
-| `STORAGE` | The storage layer failed (e.g. browser quota). `message` has the native error |
+| `STORAGE` | The storage layer failed (browser quota, Sheets service unreachable or busy). `message` has the details |
 
 ### State transitions
 
@@ -198,9 +198,11 @@ lessons, not conflicts. An approved change carries `notice: { to, text }` for th
 ```
 
 ### Adding storage
-New fact tables need a new IndexedDB store: add the name to `STORES` in `db.js`, bump `DB_VERSION`, and create
-the store in `onupgradeneeded`. Bumping `SEED_VERSION` in `mock-data.js` **wipes all demo data** in every
-browser that opens the app. Agree these changes with the storage owner in the PR.
+New fact tables: add the name to `STORES` in `db.js`, bump `DB_VERSION`, and create the store in
+`onupgradeneeded`. The Google Sheets backend picks up `STORES` automatically and creates the tab on first
+write - no extra schema step. Bumping `SEED_VERSION` in `mock-data.js` **wipes all demo data** in every
+browser that opens the app (the shared Sheet is never wiped automatically). Agree these changes with the
+storage owner in the PR (see DESIGN_CONSENSUS.md, "数据库").
 
 ### To be added by B (propose here first)
 Daily report and sign-off (arrivals from the Timetable `summary`), parent reports,
@@ -215,11 +217,36 @@ Exhibits 1-3, mastery, mistake lists and report counts are computed by `packages
 
 AI output will always be stored as a pending suggestion; only a tutor action turns it into a fact.
 
-## 5. Demo-mode storage
+## 5. Storage backends
 
-- IndexedDB `tutor-workday-demo`: one store per fact table, scan pages stored as Blobs.
-- localStorage: only the demo identity per app.
-- Both apps share the database because they run on the same origin. **This is demo-only.** In production
-  each app talks only to the backend, which scopes student requests to the signed-in student.
-- The shared Google Sheets database is reached through the TypeScript backend in `backend/` (see
-  [BACKEND.md](BACKEND.md)). The portals are not connected to it yet.
+`mock-api.js` holds the business rules and is the same for every backend. `storage.js` chooses where facts live:
+
+| Backend | How to select | Notes |
+|---|---|---|
+| IndexedDB (default) | no `config.local.json` | This browser only. The 404 for `config.local.json` in the console is expected. |
+| Google Sheets | `packages/contract/config.local.json` = `{ "backend": "sheets", "url", "token" }` | Shared across devices. Setup: `backend/google-apps-script/SETUP.md` |
+| Simulated Sheets | `?storage=sim` in the page URL | Dev/testing only: real `Code.gs` on an in-memory sheet |
+
+Storage adapter interface (both `db.js` and `sheets-db.js`):
+
+| Member | Meaning |
+|---|---|
+| `STORES` | fact table names (from `db.js`) |
+| `get(store, id)`, `getAll(store, index?, key?)` | plain reads; Sheets serves them from a short cache |
+| `transact(names, fn)` | `fn(t)` with `t.get / getAll / put / del / clear`; all-or-nothing. Sheets re-runs `fn` on fresh data if another writer got there first; after repeated conflicts it rejects with code `CONFLICT` |
+| `kind`, `label` | `'indexeddb'` / `'sheets'`, and a human label shown in the top strip |
+| `autoReseed` | `false` for Sheets: a changed `SEED_VERSION` never wipes the shared Sheet |
+| `onRemoteChange(fn)` | Sheets only: polls table revisions and calls `fn` when another device wrote |
+| `writeViews(views)` | Sheets only: overwrites the read-only `View - ...` tabs (Exhibits 1-3, today's lessons) built by `views.js`. `mock-api.js` calls it about a second after each local write; the app never reads these tabs |
+
+`Blob` fields (scan pages) are stored in Google Drive by the Sheets backend; the tab keeps `<field>__drive`.
+Records read from Sheets carry an extra `_rev` field - ignore it.
+
+Access control in both demo backends is **not** real authentication: IndexedDB is per browser; Sheets uses a
+web app link plus a shared token. Use synthetic data only. In production each app talks only to a backend that
+scopes student requests to the signed-in student.
+
+localStorage only holds the demo identity per app.
+
+This Apps Script path is the **hackathon demo storage** (consensus v1.5). The TypeScript backend in `backend/src`
+(Robin, see [BACKEND.md](BACKEND.md)) is the later production connection. Never point both at the same spreadsheet.

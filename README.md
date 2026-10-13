@@ -47,8 +47,12 @@ Use "Reset demo data" in the top strip to start over.
 
 ### Storage
 
-Data currently lives in your browser (IndexedDB, synthetic demo data). The shared Google Sheets database is
-connected through the TypeScript backend in `backend/` (owner: Robin); the portals are not wired to it yet. See DESIGN_CONSENSUS.md, "数据库".
+By default data lives in your browser (IndexedDB). For the demo, the portals can use a shared **Google Sheet**
+as the database: follow [backend/google-apps-script/SETUP.md](backend/google-apps-script/SETUP.md) (about
+5 minutes) and create `packages/contract/config.local.json`. The Sheet then also shows Exhibits 1-3 and today's
+lessons as `View - ...` tabs that update after every change. Without a Google account, add `?storage=sim` to a
+portal URL to run the same server code on an in-memory sheet. The top strip shows which storage is active.
+The TypeScript backend in `backend/src` (Robin) is the later production connection; see DESIGN_CONSENSUS.md, "数据库".
 
 ## Product direction
 

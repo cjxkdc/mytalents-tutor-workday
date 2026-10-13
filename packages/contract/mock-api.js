@@ -7,8 +7,9 @@
 
 import * as data from './mock-data.js';
 import * as derive from './derive.js';
-import * as db from './db.js';
+import { db } from './storage.js'; // IndexedDB (default) or Google Sheets, see storage.js
 import * as tt from './timetable.js';
+import { buildViews } from './views.js';
 
 export class ApiError extends Error {
   constructor(code, message, details) { super(message); this.code = code; this.details = details; }
@@ -40,13 +41,30 @@ const listeners = new Set();
 const channel = 'BroadcastChannel' in self ? new BroadcastChannel('tutor-workday-demo') : null;
 const emitLocal = () => listeners.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
 if (channel) channel.onmessage = emitLocal;
+db.onRemoteChange?.(emitLocal); // Sheets: changes made on other devices
 addEventListener('focus', emitLocal);
-function changed() { emitLocal(); channel?.postMessage('changed'); }
+function changed() { emitLocal(); channel?.postMessage('changed'); scheduleViews(); }
+
+// Google Sheets only: refresh the read-only "View - ..." tabs (Exhibits 1-3, today's lessons) shortly after
+// local writes, so anyone looking at the Sheet sees the three tables update. Failures never block the app.
+let viewsTimer = null;
+function scheduleViews() {
+  if (!db.writeViews) return;
+  clearTimeout(viewsTimer);
+  viewsTimer = setTimeout(async () => {
+    try {
+      const [results, changes, attendance] = await Promise.all([db.getAll('results'), db.getAll('lessonChanges'), db.getAll('attendance')]);
+      await db.writeViews(buildViews(data, { results, changes, attendance }));
+    } catch (e) { console.warn('Sheet view tabs not updated:', e.message); }
+  }, 800);
+}
 
 // ---------- seeding: version check, clear and seed in ONE transaction ----------
 async function seedTx(t, force) {
   const meta = await t.get('meta', 'seed');
   if (!force && meta?.version === data.SEED_VERSION) return;
+  // A shared database (Sheets) is never wiped automatically because the seed version changed.
+  if (!force && meta && db.autoReseed === false) return;
   for (const s of db.STORES) await t.clear(s);
   await t.put('meta', { id: 'seed', version: data.SEED_VERSION });
   for (const r of data.seedResults) await t.put('results', r);
@@ -56,7 +74,10 @@ async function seedTx(t, force) {
 }
 let seeded = null;
 function ensureSeeded() {
-  if (!seeded) seeded = db.transact(db.STORES, t => seedTx(t, false)).catch(e => { seeded = null; throw e; });
+  if (!seeded) {
+    seeded = db.transact(db.STORES, t => seedTx(t, false)).catch(e => { seeded = null; throw e; });
+    seeded.then(scheduleViews, () => {}); // first load also fills the view tabs
+  }
   return seeded;
 }
 async function load(store, index, key) { await ensureSeeded(); return db.getAll(store, index, key); }
@@ -597,6 +618,8 @@ export function createMockApi(user) {
   api.subscribe = fn => { listeners.add(fn); return () => listeners.delete(fn); };
   return api;
 }
+
+export const storage = { kind: db.kind, label: db.label };
 
 export const demoUsers = {
   staff: data.users.staff,
