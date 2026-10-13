@@ -25,6 +25,10 @@ M0–M2 搭框架，M3 起按功能重要性排序。每个 milestone 结束时�
 
 **验收**：`dev` 命令同时启动前后端；CI 通过；README 写清楚运行步骤。
 
+**状态（2026-10-13）**：`pnpm dev:all` 同时启动 portal（:8765）和后端（:3100，需先 `pnpm install`）；portal 顶栏显示后端 `/health` 是否连通；
+CI 有两条：`Backend checks`（Robin）和 `Portal checks`（语法检查 + 前端规则测试，无依赖）；README 已写运行步骤。
+未做：前端 lint/format（后端由 TypeScript 类型检查覆盖）。
+
 ### M1 · 数据层和领域模型
 **负责人**：A（B 评审 schema）
 **目标**：领域模型落到代码和 Google Sheets 里。

@@ -18,17 +18,24 @@ and [backend contract addendum](packages/contract/BACKEND.md). This backend auto
 marks and derives all three exhibits without a teacher approval gate, following the latest project request.
 This PR does not change the portal pages, their mock workflow, or their appearance.
 
-> **Pending decisions** (see `DESIGN_CONSENSUS.md`, "待用户决定的冲突"): two Google Sheets connections now coexist
-> (this TypeScript service and the Apps Script service the portals use), and the consensus exam flow is
-> "AI marks -> tutor reviews", which differs from the no-approval statement above. Neither is settled yet.
+> **Decided (consensus v1.4):** this TypeScript backend is the only Google Sheets connection, and AI-marked or
+> scanned results must wait for tutor review before they become official. The no-approval statement above is
+> superseded; the review state is being added before the portals connect to this backend.
 
 ## Run
 
-No build step, no dependencies:
+One command starts the portals and, once dependencies are installed, the backend too (Node.js 24+):
 
 ```bash
-python serve.py
+pnpm dev:all
 ```
+
+- Portals: http://localhost:8765 - no build step and no dependencies.
+- Backend API: http://127.0.0.1:3100 - needs `pnpm install --frozen-lockfile` once; without it only the portals start.
+- The top strip of each portal shows whether the backend answers `/health`. The pages still use demo data either way.
+- Without Node: `python serve.py` serves the portals only.
+- `pnpm check:web` checks every portal file parses and runs the front-end rule tests (`packages/contract/test/`);
+  `pnpm check` covers the backend. CI runs both (`.github/workflows/`).
 
 Open http://localhost:8765 and pick a portal:
 
