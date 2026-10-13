@@ -21,7 +21,13 @@ export function openDb() {
         if (name === 'pages') store.createIndex('submissionId', 'submissionId');
       }
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      // A newer version of the app (e.g. after a pull that adds stores) is upgrading in another tab:
+      // let it through instead of leaving it hanging. This tab reopens on its next request.
+      db.onversionchange = () => { db.close(); dbPromise = null; };
+      resolve(db);
+    };
     req.onerror = () => { dbPromise = null; reject(req.error); };
     req.onblocked = () => { dbPromise = null; reject(new Error('Database is open in another tab with an older version. Close other tabs and retry.')); };
   });
