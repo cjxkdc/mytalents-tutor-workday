@@ -32,11 +32,13 @@ coordinate follow-up work, and make daily progress easier to see.
 | Area | Capabilities | Status |
 | --- | --- | --- |
 | Teacher portal | Test marking/review, records (Exhibits 1-3), corrections | Working (demo) |
-| | Work WeChat message handling, daily reports, student briefings, student management, calendar | Placeholders (owner B) |
+| | Timetable: whiteboard by room, attendance, change requests and direct changes, extra lessons, WeCom notice text | Working (demo) |
+| | Work WeChat message handling, daily reports, student briefings, student management | Placeholders (owner B) |
 | Manager access | Teacher capabilities plus daily report review and sign-off, policy approval | Placeholders (owner B) |
 | Student portal | Upload scanned papers, mistake bank, record exam data, view learning progress | Working (demo) |
-| | Book Q&A, timetable, study hints | Placeholders (owner B) |
-| Shared features | Role-based access (demo identity switcher), mistake bank, calendar, Google ecosystem sync | Partly; sync not connected |
+| | Timetable: weekly lessons, request leave / online / reschedule | Working (demo) |
+| | Study hints | Placeholder (owner B) |
+| Shared features | Role-based access (demo identity switcher), mistake bank, timetable, Google ecosystem sync | Partly; sync not connected |
 
 What works end to end: student upload → marking console (per-question DONE / W / C / Blank + score; tutor confirms
 the attempt; replacing results needs a reason and is logged) → Exhibits 1-3 and heat-map with evidence drill-down

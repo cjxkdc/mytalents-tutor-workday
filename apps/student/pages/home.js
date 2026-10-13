@@ -44,10 +44,10 @@ export function render(el, params, ctx) {
     if (tab === 'day') {
       const days = weekDays(data.today);
       selected = selected || data.today;
-      const day = days.find(d => d.iso === selected);
-      const items = data.weekLessons.filter(t => t.day === day.weekday)
-        .map(t => ({ title: 'Maths tutoring', sub: `${t.mode === 'online' ? 'Online' : 'On-site'} with ${t.teacher}`, time: `${t.start} - ${t.end}`, place: t.room }));
-      panel.innerHTML = `<div class="notice">Upload finished tests from <a href="#/upload">Upload test</a>.</div>
+      const items = data.weekLessons.filter(t => t.date === selected)
+        .map(t => ({ title: t.state === 'cancelled' ? 'Maths tutoring - cancelled (leave)' : t.state === 'moved' ? 'Maths tutoring - moved' : 'Maths tutoring',
+          sub: `${t.mode === 'online' ? 'Online' : 'On-site'} with ${t.teacher}`, time: `${t.start} - ${t.end}`, place: t.room }));
+      panel.innerHTML = `<div class="notice">Upload finished tests from <a href="#/upload">Upload test</a>. Need to change a lesson? <a href="#/timetable">Timetable</a>.</div>
         ${weekStrip(days, selected)}${agenda(fmtDate(selected), items, 'No lessons this day.')}`;
       panel.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => { selected = b.dataset.day; paint(); }));
     } else {

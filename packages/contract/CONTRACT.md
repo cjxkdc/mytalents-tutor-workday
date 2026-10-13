@@ -81,6 +81,7 @@ Exception: `subscribe(fn)` is synchronous and returns the unsubscribe function.
 |---|---|---|
 | Submission | `queued` → `marked` (confirmMarking) · `queued` → `exception` (markException) | staff |
 | Correction | none → `submitted` (student) · `needs-work` → `submitted` (student) · `submitted` → `confirmed` / `needs-work` (staff) | as shown |
+| Lesson change | none → `pending` (student) → `approved` / `declined` (staff) · `pending` → `withdrawn` (student) · none → `approved` (staff direct) · `approved` → `revoked` (staff) | as shown |
 
 Every check-then-write runs inside one storage transaction, so two tabs confirming the same submission
 cannot both succeed: the second gets `INVALID_STATE`.
@@ -118,6 +119,40 @@ longer match the new marks. Demo simplification - the backend should version res
 | `listCorrections()` / `reviewCorrection(id, { accept, note, version })` | returning a correction needs a note; `version` from the list |
 | `listAudit()` | |
 
+### Timetable - owner A
+Lessons only; Q&A sessions are not part of the timetable. Weekly template = reference data; changes and attendance
+are facts; the lessons on a date are derived by `packages/contract/timetable.js` (pure, reusable by the backend).
+
+| Method | Who | Notes |
+|---|---|---|
+| `getTimetable({ from?, to? })` | staff | default this Mon-Sun, at most 42 days. `{ today, from, to, rules, teachers, rooms, students, days[{ date, weekday, lessons, summary }], pending, recent }` |
+| `changeLesson({ occId, kind, to?, reason })` | staff | kind ∈ leave / online / reschedule; takes effect at once. Extra lesson: `{ kind: 'extra', studentId, to: { date, start, end, teacher, mode, room? }, reason }` |
+| `decideLessonChange(id, { approve, note, version })` | staff | declining needs `note`; approving re-checks the slot and fills `notice` |
+| `revokeLessonChange(id, { reason, version })` | staff | approved → revoked; refused once attendance is recorded |
+| `markAttendance(occId, date, status)` | staff | status ∈ present / late / absent, `null` clears. Only lessons that take place, today or earlier |
+| `getMyTimetable({ from?, to? })` | student | own lessons and own requests; no staff notice text |
+| `requestLessonChange({ occId, kind, to?, reason })` | student | kind ∈ leave / online / reschedule → `pending` |
+| `withdrawLessonChange(id, version)` | student | pending → withdrawn |
+
+Rules (all return `VALIDATION` or `INVALID_STATE`): reason required; lesson today or later; one pending or approved
+change per lesson; no change once attendance is recorded; reschedule and extra lessons must be on a weekday, inside
+`policy.timetable` shift hours and must not overlap the student's other lessons. Shared teachers or rooms are group
+lessons, not conflicts. An approved change carries `notice: { to, text }` for the tutor to copy into WeCom - nothing is sent.
+
+```js
+// one lesson occurrence (days[].lessons[])
+{ id: 'L02|2026-10-15' /* lessonId|original date, or X|changeId for extras */, lessonId, studentId, studentName,
+  date, start, end, teacher, room, mode: 'onsite'|'online', extra,
+  state: 'scheduled'|'cancelled'|'moved' /* moved = placeholder on the original date */,
+  change?, pending?, movedFrom?: { date, start, end }, movedTo?: { date, start, end },
+  attendance?: { status: 'present'|'late'|'absent', markedBy, markedAt } }
+// summary (per day) - arrivals for the daily report come from here
+{ lessons, onsite, online, present, late, absent, unmarked, cancelled, arrivedOnsite }
+// change fact
+{ id, occId, lessonId?, studentId, date /* original */, kind: 'leave'|'online'|'reschedule'|'extra', to?, reason,
+  source: 'student'|'staff', status, requestedBy, requestedAt, decidedBy?, decidedAt?, decisionNote?, notice?, version }
+```
+
 ### Student - owner A
 | Method | Notes |
 |---|---|
@@ -136,9 +171,9 @@ longer match the new marks. Demo simplification - the backend should version res
 
 ```js
 // getStaffHome()
-{ today: '2026-10-13', queued: 2, exceptions: 1, correctionsToReview: 0,
-  week:          [{ studentId, studentName, day /*1=Mon..7=Sun*/, start: '16:00', end: '18:00', teacher, room, mode: 'onsite'|'online' }],
-  todaySessions: [/* same shape, today only, sorted by start */],
+{ today: '2026-10-13', queued: 2, exceptions: 1, correctionsToReview: 0, timetableRequests: 2,
+  week:          [/* lesson occurrences (see Timetable) for today + 6 days, each with day: 1=Mon..7=Sun */],
+  todaySessions: [/* today's lessons that take place, sorted by start */],
   upcomingSacs:  [{ studentId, studentName, date, title, moduleIds: ['M2','M3'] }] }
 
 // getExhibits()
@@ -163,13 +198,14 @@ the store in `onupgradeneeded`. Bumping `SEED_VERSION` in `mock-data.js` **wipes
 browser that opens the app. Agree these changes with A in the PR.
 
 ### To be added by B (propose here first)
-Messages and triage, schedule-change requests, lessons / calendar / Q&A sessions, daily report and sign-off,
-parent reports, student management, policy approval, AI quality. Put each new method in this file with
+Messages and triage (a message asking for a lesson change should end up as a timetable change, via
+`changeLesson`), daily report and sign-off (arrivals from the Timetable `summary`), parent reports,
+student management, policy approval, AI quality. Put each new method in this file with
 inputs, outputs and errors before building against it.
 
 ## 4. Facts vs derived data
 
-Only facts are written: results, submissions, pages, corrections, exam records, audit (more to come from B).
+Only facts are written: results, submissions, pages, corrections, exam records, lesson changes, attendance, audit (more to come from B).
 Exhibits 1-3, mastery, mistake lists and report counts are computed by `packages/contract/derive.js`
 (pure functions - the real backend reuses them). Rule values come from `policy`, never hard-coded.
 
