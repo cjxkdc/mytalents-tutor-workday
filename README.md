@@ -22,6 +22,12 @@ Open http://localhost:8765 and pick a portal:
 Open both in separate tabs: a test a student uploads appears in the staff marking queue straight away.
 Use "Reset demo data" in the top strip to start over.
 
+### Storage
+
+By default data lives in your browser (IndexedDB). To use the shared **Google Sheets database**, follow
+[backend/google-apps-script/SETUP.md](backend/google-apps-script/SETUP.md) and create
+`packages/contract/config.local.json`. The top strip shows which storage is active.
+
 ## Product direction
 
 Create an LMS-inspired workspace for teachers, managers and students. Reduce repeated data entry, help staff
@@ -49,7 +55,7 @@ apps/staff/          staff portal
 apps/student/        student portal
 packages/contract/   CONTRACT.md, mock API (IndexedDB), derive functions, synthetic data
 packages/ui/         tokens, base styles, router, layout, shared components
-backend/             (not started)
+backend/             google-apps-script/: Sheets database service (Code.gs), setup guide, simulator tests
 docs/                milestones and ownership
 prototype/           earlier single-page prototype, kept for reference
 serve.py             no-cache dev server

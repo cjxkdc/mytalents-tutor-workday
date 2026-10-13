@@ -1,4 +1,4 @@
-import { createMockApi, demoUsers } from '../../packages/contract/mock-api.js';
+import { createMockApi, demoUsers, storage } from '../../packages/contract/mock-api.js';
 import { createRouter } from '../../packages/ui/router.js';
 import { mountChrome } from '../../packages/ui/layout.js';
 import { toast } from '../../packages/ui/components/html.js';
@@ -17,9 +17,10 @@ const chrome = mountChrome(document.getElementById('chrome'), {
     options: demoUsers.students.map(u => ({ id: u.id, label: u.name })),
     onChange(id) { user = demoUsers.students.find(u => u.id === id); api = createMockApi(user); saveId(id); router.refresh(); },
   },
-  demoNote: 'Demo mode - pick a student to sign in as. Data stays in this browser.',
+  demoNote: storage.kind === 'sheets' ? 'Demo mode - pick a student to sign in as. Data is in the shared Google Sheet.' : 'Demo mode - pick a student to sign in as. Data stays in this browser.',
   async onReset() {
-    if (!confirm('Reset all demo data in this browser?')) return;
+    const msg = storage.kind === 'sheets' ? 'Reset ALL data in the shared Google Sheet? Every tab is overwritten with demo data.' : 'Reset all demo data in this browser?';
+    if (!confirm(msg)) return;
     await api.resetDemo(); toast('Demo data reset');
   },
 });
