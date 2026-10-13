@@ -4,7 +4,23 @@ A hackathon project to simplify teaching operations and learning support at MyTa
 (AIPS Hackathon case *Automating the Learning Support Tutor's Workday*).
 
 **Status:** front-end framework for both portals is running in demo mode. **All data is synthetic and stored
-in your browser only.** No backend and no external integrations are connected yet.
+in your browser only.** A separate TypeScript backend is now available; these existing portal pages still use
+the IndexedDB mock API until their owner connects them. External Google/AI credentials are not configured.
+
+## Backend
+
+With Node.js 24+ and pnpm 11.25.0, run `pnpm install --frozen-lockfile`, then `pnpm dev`.
+The API listens on `http://127.0.0.1:3100`; `pnpm demo:seed` imports synthetic data.
+`pnpm check` runs type checking, tests and a production build.
+
+See [backend setup](backend/README.md), [API](docs/api.md), [module handoff](docs/architecture.md),
+and [backend contract addendum](packages/contract/BACKEND.md). This backend automatically validates/imports
+marks and derives all three exhibits without a teacher approval gate, following the latest project request.
+This PR does not change the portal pages, their mock workflow, or their appearance.
+
+> **Pending decisions** (see `DESIGN_CONSENSUS.md`, "待用户决定的冲突"): two Google Sheets connections now coexist
+> (this TypeScript service and the Apps Script service the portals use), and the consensus exam flow is
+> "AI marks -> tutor reviews", which differs from the no-approval statement above. Neither is settled yet.
 
 ## Run
 
@@ -58,6 +74,7 @@ apps/student/        student portal
 packages/contract/   CONTRACT.md, mock API (IndexedDB), derive functions, synthetic data
 packages/ui/         tokens, base styles, router, layout, shared components
 backend/             google-apps-script/: Sheets database service (Code.gs), setup guide, simulator tests
+                     src/, test/: modular TypeScript API, repositories, scanning and tests (Robin)
 docs/                milestones and ownership
 prototype/           earlier single-page prototype, kept for reference
 serve.py             no-cache dev server

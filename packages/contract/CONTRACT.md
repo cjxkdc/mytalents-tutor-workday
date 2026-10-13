@@ -2,6 +2,11 @@
 
 What both people build against. Owner: A. Changes go through a PR reviewed by B.
 
+Backend integration proposal: [BACKEND.md](BACKEND.md) and [openapi.json](openapi.json).
+The sections below continue to describe the existing IndexedDB demo. The backend-only change follows
+the user's later requirement to process valid imports automatically without a teacher approval gate;
+its HTTP adapter and policy differences are explicitly documented in the addendum.
+
 ## 1. Page modules
 
 Each page is an ES module in `apps/<app>/pages/` and is registered in `apps/<app>/routes.js`:

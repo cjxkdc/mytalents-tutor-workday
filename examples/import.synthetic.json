@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "source": "synthetic-demo",
+  "batchId": "demo-2026-10-13",
+  "students": [
+    { "id": "demo-student-1", "revision": 1, "name": "Demo Student A", "yearLevel": 11 },
+    { "id": "demo-student-2", "revision": 1, "name": "Demo Student B", "yearLevel": 11 }
+  ],
+  "knowledgePoints": [
+    { "id": "linear", "revision": 1, "moduleId": "algebra", "name": "一次方程" },
+    { "id": "quadratic", "revision": 1, "moduleId": "algebra", "name": "二次方程" },
+    { "id": "functions", "revision": 1, "moduleId": "algebra", "name": "函数" },
+    { "id": "graphs", "revision": 1, "moduleId": "algebra", "name": "图像" }
+  ],
+  "exams": [{
+    "id": "algebra-test-1", "revision": 1, "moduleId": "algebra", "title": "Synthetic Algebra Test", "kind": "module_test",
+    "questions": [
+      { "id": "q1", "knowledgePointIds": ["linear"], "maxScore": 2, "prompt": "2x = 6", "rubric": "x = 3: 2 points; valid intermediate step: 1 point." },
+      { "id": "q2", "knowledgePointIds": ["linear"], "maxScore": 2, "prompt": "3x + 1 = 10", "rubric": "x = 3: 2 points; 3x = 9: 1 point." },
+      { "id": "q3", "knowledgePointIds": ["quadratic"], "maxScore": 2, "prompt": "x squared = 4", "rubric": "x = 2 and x = -2: 2 points; one root only: 1 point." },
+      { "id": "q4", "knowledgePointIds": ["functions"], "maxScore": 2, "prompt": "f(x) = 2x + 1. Find f(2).", "rubric": "f(2) = 5: 2 points; substitution 2*2+1: 1 point." }
+    ]
+  }],
+  "attempts": [{
+    "id": "demo-attempt-1", "revision": 1, "studentId": "demo-student-1", "examId": "algebra-test-1",
+    "completedAt": "2026-10-13T15:00:00+11:00", "markedAt": "2026-10-13T15:30:00+11:00",
+    "marks": [
+      { "questionId": "q1", "outcome": "DONE", "score": 2, "studentAnswer": "x = 3" },
+      { "questionId": "q2", "outcome": "W", "score": 0, "studentAnswer": "x = 10", "feedback": "先移项，再除以 3。" },
+      { "questionId": "q3", "outcome": "C", "score": 1, "studentAnswer": "x = 2", "feedback": "检查负数根。" },
+      { "questionId": "q4", "outcome": "BLANK", "score": 0 }
+    ]
+  }],
+  "masteryObservations": [{ "id": "demo-observation-1", "revision": 1, "studentId": "demo-student-1", "knowledgePointId": "graphs", "mastery": "not_covered", "assessedAt": "2026-10-13T14:30:00+11:00", "reason": "Synthetic example: topic not yet covered." }],
+  "activities": [
+    { "id": "demo-attendance-1", "revision": 1, "studentId": "demo-student-1", "kind": "attendance", "mode": "onsite", "occurredAt": "2026-10-13T14:00:00+11:00" },
+    { "id": "demo-qa-1", "revision": 1, "studentId": "demo-student-1", "kind": "qa_completed", "questionCount": 2, "occurredAt": "2026-10-13T16:00:00+11:00" },
+    { "id": "demo-feedback-1", "revision": 1, "studentId": "demo-student-1", "kind": "parent_feedback_completed", "referenceId": "synthetic-message-1", "occurredAt": "2026-10-13T17:00:00+11:00" }
+  ],
+  "resources": [{ "id": "demo-resource-1", "revision": 1, "title": "Synthetic practice resource (replace before demo)", "knowledgePointIds": ["linear"], "url": "https://example.com/synthetic-algebra-practice" }]
+}
