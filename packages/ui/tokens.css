@@ -1,0 +1,62 @@
+/* Palette inspired by a university student-portal look: deep navy chrome, teal band, pale-blue tiles.
+   No institutional logos or names are used. */
+:root {
+  --navy-900: #000c3a;
+  --navy-800: #001150;
+  --navy-700: #0b2266;
+  --teal-band: #0b4a5e;
+  --tile: #d3f0fa;
+  --tile-hover: #b9e6f6;
+  --tile-muted: #dbe3d6;
+  --tile-muted-hover: #c9d4c2;
+  --cyan: #46c8f0;
+
+  --bg: #ffffff;
+  --page: #f3f5f8;
+  --surface: #ffffff;
+  --surface-2: #eef2f6;
+  --text: #0d1b3e;
+  --text-muted: #55617a;
+  --border: #d9dee7;
+  --link: #0b2a8a;
+  --focus: #46c8f0;
+
+  --good: #1d7a45; --good-bg: #e2f3e8;
+  --warn: #8a5a00; --warn-bg: #fdf0d5;
+  --bad: #b3261e;  --bad-bg: #fbe4e1;
+  --info: #0b2a8a; --info-bg: #e3ecfb;
+
+  --ms-mastered: #2f9a5c;
+  --ms-partial: #eeb446;
+  --ms-not-understood: #dd5e50;
+  --ms-not-covered: #d5d9e0;
+
+  --oc-done: #e2f3e8; --oc-w: #fbe4e1; --oc-c: #fdf0d5; --oc-blank: #eceff3;
+
+  --radius: 4px;
+  --font: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0b0f1a; --bg: #0b0f1a; --surface: #141a29; --surface-2: #1b2234;
+    --text: #e6eaf2; --text-muted: #9aa5ba; --border: #2a3247; --link: #8fb3ff;
+    --tile: #12324a; --tile-hover: #184262; --tile-muted: #26302a; --tile-muted-hover: #2f3b33;
+    --good: #67d095; --good-bg: #173324; --warn: #f0c060; --warn-bg: #3a2e14;
+    --bad: #f08a80; --bad-bg: #3c1f1c; --info: #8fb3ff; --info-bg: #1b2a4a;
+    --ms-not-covered: #3a4256;
+    --oc-done: #173324; --oc-w: #3c1f1c; --oc-c: #3a2e14; --oc-blank: #252c3b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0b0f1a; --bg: #0b0f1a; --surface: #141a29; --surface-2: #1b2234;
+  --text: #e6eaf2; --text-muted: #9aa5ba; --border: #2a3247; --link: #8fb3ff;
+  --tile: #12324a; --tile-hover: #184262; --tile-muted: #26302a; --tile-muted-hover: #2f3b33;
+  --good: #67d095; --good-bg: #173324; --warn: #f0c060; --warn-bg: #3a2e14;
+  --bad: #f08a80; --bad-bg: #3c1f1c; --info: #8fb3ff; --info-bg: #1b2a4a;
+  --ms-not-covered: #3a4256;
+  --oc-done: #173324; --oc-w: #3c1f1c; --oc-c: #3a2e14; --oc-blank: #252c3b;
+  color-scheme: dark;
+}

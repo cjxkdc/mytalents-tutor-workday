@@ -1,63 +1,50 @@
-# Tutor Workday Dashboard
+# Tutor Workday
 
-Prototype for the AIPS Hackathon case *Automating the Learning Support Tutor's Workday* (University of Melbourne AI Prototyping Studio).
+Prototype for the AIPS Hackathon case *Automating the Learning Support Tutor's Workday*.
 
-**All data is mock data** modelled on the brief's Exhibits 1–3. No real student information.
+**Demo mode only: all data is mock data stored in your browser.** No real student information.
 
 ## Run
 
-No build step and no dependencies. ES modules need a local server:
+No build step, no dependencies:
 
 ```bash
-python -m http.server 8765
+python serve.py
 ```
 
-Then open http://localhost:8765.
+Open http://localhost:8765 and pick a portal:
 
-## Core idea
+- Staff portal: http://localhost:8765/apps/staff/
+- Student portal: http://localhost:8765/apps/student/
 
-The tutor confirms each test question **once**. That single confirmation writes a result long table, and the Marking Sheet (Exhibit 1), the Student Progress Sheet (Exhibit 2) and the Student Exam Statistics (Exhibit 3) are all derived views of it. This removes the triple entry in brief step 8.
-
-AI only drafts or suggests. The tutor keeps every judgement call: final marks and W/C labels, passing a Demo, scheduling a Retest, messages to parents, and confirming the follow-up list. The manager still signs the report.
-
-## Pages → brief steps
-
-| Page | Brief step | Status |
-|---|---|---|
-| Today | 1–3: workspace, timetable, attendance, change requests | Working on mock data |
-| Briefings | 4: pre-session fact sheet per student (step 5 stays human) | Working; AI plan suggestion is a placeholder |
-| Messages | 6–7: paste message → triage → reply draft | Triage is a keyword **stub**; AI draft is a placeholder |
-| Marking | 8: submission queue + per-question console → sync to Exhibits 1–3 | Working; scan crops and AI suggestions are placeholders |
-| Records | Exhibits 1–3 + 9C exam self-records; heat-map cells drill down to evidence | Working |
-| Daily report | Phase 5: auto-counted facts, rule-based follow-up nominations, manual sign-off | Working |
-| Policy | Every rule the system applies, flagged *proposed* until the centre approves | Working |
+Open both in separate tabs: a test a student uploads appears in the staff marking queue straight away.
+Use "Reset demo data" in the top strip to start over.
 
 ## Structure
 
 ```
-index.html
-css/styles.css
-js/app.js            hash router + nav
-js/data/mock.js      mock data + proposed policy (shape mirrors planned Google Sheets tables)
-js/lib/store.js      state, derived Exhibit views, mutations
-js/lib/triage.js     STUB message triage (to be replaced by an LLM call)
-js/lib/ui.js         small render helpers
-js/views/*.js        one file per page
+apps/staff/          staff portal (tutor, manager)
+apps/student/        student portal (mobile first)
+packages/contract/   CONTRACT.md, mock API, derive functions, mock data
+packages/ui/         tokens, base styles, router, layout, shared components
+backend/             (not started)
+docs/                milestones and ownership
+prototype/           earlier single-page prototype, kept for reference
 ```
 
-## Proposed policy (demo defaults)
+## What works (owner A)
 
-- Mastery uses the latest 3 valid evidence items per knowledge point; fewer than 2 gives "insufficient evidence".
-- C (careless) is shown separately and does not count toward mastery.
-- Blank means "confirmed not attempted". It is never turned into W, and it is a different state from "not entered".
-- A W on a multi-knowledge-point question counts only against the primary knowledge point.
+- Student uploads photos of a test (resized in the browser, stored locally)
+- Staff marking queue and console: scans next to per-question DONE / W / C / Blank and score;
+  attempt confirmed by the tutor; replacing results requires a reason and is logged
+- Records: Exhibits 1-3 generated from one result table, heat-map drill-down to evidence, exam records, audit log
+- Student mistake bank (W and C), corrections, tutor confirms or returns them
+- Student progress and exam log
 
-All values live in `js/data/mock.js` → `policy` and are shown on the Policy page.
+Pages owned by B are registered as placeholders with their planned scope.
 
-## Not built yet
+## Docs
 
-- Google Sheets / Classroom read-write (currently in-memory mock; changes reset on reload)
-- Answer-sheet template with QR, scan upload and cropping
-- AI marking suggestions (match / no match / cannot tell), message triage and drafts, plan suggestions
-- Tutor override with reason logging on the heat-map
-- Parent weekly report drafts
+- [Contract](packages/contract/CONTRACT.md) - page interface, API methods, errors
+- [Milestones](docs/MILESTONES.md)
+- [Ownership](docs/OWNERSHIP.md)

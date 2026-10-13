@@ -1,0 +1,21 @@
+/* Staff-only layout pieces */
+.console { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(420px, 1.3fr); gap: 20px; align-items: start; }
+.scans { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 12px; max-height: 80vh; overflow-y: auto; }
+.scans img { width: 100%; border: 1px solid var(--border); background: #fff; }
+.scan-missing { border: 2px dashed var(--border); padding: 40px 16px; text-align: center; color: var(--text-muted); }
+.qrow { border: 1px solid var(--border); padding: 10px 12px; margin-bottom: 8px; }
+.qrow.has-err { border-color: var(--bad); }
+.qhead { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.qctl { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.qctl input[type=number] { width: 72px; }
+.attempt-box { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.attempt-box .field { margin: 0; }
+.attempt-box input { width: 90px; }
+.drill { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.sub-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; flex-wrap: wrap; }
+.sub-tabs a { padding: 10px 14px; text-decoration: none; color: var(--text-muted); border-bottom: 3px solid transparent; font-weight: 600; }
+.sub-tabs a.active { color: var(--text); border-bottom-color: var(--navy-800); }
+.todo { list-style: none; margin: 0; padding: 0; }
+.todo li { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.todo .count { font-size: 22px; font-weight: 700; }
+@media (max-width: 900px) { .console { grid-template-columns: 1fr; } .scans { position: static; max-height: none; } }

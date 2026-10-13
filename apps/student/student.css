@@ -1,0 +1,16 @@
+/* Student-only layout pieces (mobile first) */
+.pages-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+.pages-grid figure { margin: 0; border: 1px solid var(--border); background: var(--surface-2); position: relative; }
+.pages-grid img { width: 100%; height: 180px; object-fit: cover; display: block; }
+.pages-grid figcaption { font-size: 13px; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; }
+.pages-grid button { font: inherit; font-size: 12px; background: none; border: 0; color: var(--bad); cursor: pointer; }
+.drop { border: 2px dashed var(--border); padding: 24px; text-align: center; background: var(--surface-2); }
+.drop i { font-size: 36px; display: block; margin-bottom: 6px; }
+.mistake { border-bottom: 1px solid var(--border); padding: 14px 0; }
+.mistake:last-child { border-bottom: 0; }
+.mistake-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mistake textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); padding: 14px; }
+.kpi b { display: block; font-size: 26px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0 16px; }
