@@ -1,62 +1,52 @@
-/* Palette inspired by a university student-portal look: deep navy chrome, teal band, pale-blue tiles.
-   No institutional logos or names are used. */
+/* Bright blue-and-white palette. Light by default (also when the OS is in dark mode);
+   a dark variant exists only when <html data-theme="dark"> is set explicitly. */
 :root {
-  --navy-900: #000c3a;
-  --navy-800: #001150;
-  --navy-700: #0b2266;
-  --teal-band: #0b4a5e;
-  --tile: #d3f0fa;
-  --tile-hover: #b9e6f6;
-  --tile-muted: #dbe3d6;
-  --tile-muted-hover: #c9d4c2;
-  --cyan: #46c8f0;
+  --brand-900: #1e40af;   /* brand block, mobile nav */
+  --brand-800: #2563eb;   /* top bar, card heads, primary buttons */
+  --brand-700: #1d4ed8;   /* hover */
+  --band: #dbeafe;        /* strip under the top bar */
+  --accent: #ffffff;      /* active underline on blue */
+  --tile: #eaf2ff;
+  --tile-hover: #d6e6ff;
+  --tile-text: #1d4ed8;
+  --tile-muted: #f3f6fb;
+  --tile-muted-hover: #e6edf7;
 
   --bg: #ffffff;
-  --page: #f3f5f8;
+  --page: #f5f8fe;
   --surface: #ffffff;
-  --surface-2: #eef2f6;
-  --text: #0d1b3e;
-  --text-muted: #55617a;
-  --border: #d9dee7;
-  --link: #0b2a8a;
-  --focus: #46c8f0;
+  --surface-2: #eef4fd;
+  --text: #0f1e3d;
+  --text-muted: #5b6b85;
+  --border: #dbe4f0;
+  --link: #1d4ed8;
+  --focus: #60a5fa;
 
-  --good: #1d7a45; --good-bg: #e2f3e8;
-  --warn: #8a5a00; --warn-bg: #fdf0d5;
-  --bad: #b3261e;  --bad-bg: #fbe4e1;
-  --info: #0b2a8a; --info-bg: #e3ecfb;
+  --good: #15803d; --good-bg: #e7f6ec;
+  --warn: #a15c00; --warn-bg: #fff4e0;
+  --bad: #c0262d;  --bad-bg: #fde8e8;
+  --info: #1d4ed8; --info-bg: #e8f0ff;
 
-  --ms-mastered: #2f9a5c;
-  --ms-partial: #eeb446;
-  --ms-not-understood: #dd5e50;
-  --ms-not-covered: #d5d9e0;
+  --ms-mastered: #22a05b;
+  --ms-partial: #f2b544;
+  --ms-not-understood: #e5574a;
+  --ms-not-covered: #dfe5ee;
 
-  --oc-done: #e2f3e8; --oc-w: #fbe4e1; --oc-c: #fdf0d5; --oc-blank: #eceff3;
+  --oc-done: #e7f6ec; --oc-w: #fde8e8; --oc-c: #fff4e0; --oc-blank: #eef1f6;
 
-  --radius: 4px;
+  --radius: 6px;
   --font: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --page: #0b0f1a; --bg: #0b0f1a; --surface: #141a29; --surface-2: #1b2234;
-    --text: #e6eaf2; --text-muted: #9aa5ba; --border: #2a3247; --link: #8fb3ff;
-    --tile: #12324a; --tile-hover: #184262; --tile-muted: #26302a; --tile-muted-hover: #2f3b33;
-    --good: #67d095; --good-bg: #173324; --warn: #f0c060; --warn-bg: #3a2e14;
-    --bad: #f08a80; --bad-bg: #3c1f1c; --info: #8fb3ff; --info-bg: #1b2a4a;
-    --ms-not-covered: #3a4256;
-    --oc-done: #173324; --oc-w: #3c1f1c; --oc-c: #3a2e14; --oc-blank: #252c3b;
-    color-scheme: dark;
-  }
-}
 :root[data-theme="dark"] {
-  --page: #0b0f1a; --bg: #0b0f1a; --surface: #141a29; --surface-2: #1b2234;
-  --text: #e6eaf2; --text-muted: #9aa5ba; --border: #2a3247; --link: #8fb3ff;
-  --tile: #12324a; --tile-hover: #184262; --tile-muted: #26302a; --tile-muted-hover: #2f3b33;
-  --good: #67d095; --good-bg: #173324; --warn: #f0c060; --warn-bg: #3a2e14;
-  --bad: #f08a80; --bad-bg: #3c1f1c; --info: #8fb3ff; --info-bg: #1b2a4a;
-  --ms-not-covered: #3a4256;
-  --oc-done: #173324; --oc-w: #3c1f1c; --oc-c: #3a2e14; --oc-blank: #252c3b;
+  --brand-900: #172554; --brand-800: #1e3a8a; --brand-700: #1e40af; --band: #172036; --accent: #93c5fd;
+  --tile: #16274a; --tile-hover: #1d3462; --tile-text: #bfdbfe; --tile-muted: #1a2133; --tile-muted-hover: #222b40;
+  --page: #0b1120; --bg: #0b1120; --surface: #121a2c; --surface-2: #1a2438;
+  --text: #e6ecf6; --text-muted: #9aa8c0; --border: #26324a; --link: #93c5fd;
+  --good: #6ad395; --good-bg: #153323; --warn: #f1c46a; --warn-bg: #3a2e14;
+  --bad: #f38b82; --bad-bg: #3d1f1d; --info: #93c5fd; --info-bg: #1b2a4a;
+  --ms-not-covered: #2f3a50;
+  --oc-done: #153323; --oc-w: #3d1f1d; --oc-c: #3a2e14; --oc-blank: #222b3d;
   color-scheme: dark;
 }
