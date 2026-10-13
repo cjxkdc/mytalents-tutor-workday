@@ -122,7 +122,7 @@ MyTalents 的 hackathon 产品用于减少教学管理中的重复录入，并�
 | 数据存储 | IndexedDB 保存演示业务数据与图片；localStorage 保存演示身份 |
 | 后端 | 尚无已接通的真实业务后端；Python 服务只是静态文件开发服务器 |
 | 集成 | 未接通真实 OCR、Google 同步、企业微信或正式身份认证 |
-| Google Sheets 存储 | v1.3 的 Apps Script 方案已按 v1.4 从 main 移除。Robin 的 TypeScript 后端已在 main 的 `backend/`，**尚未部署、尚未与前端连通，也还没有老师审核状态**；portal 仍用 IndexedDB |
+| Google Sheets 存储 | v1.3 的 Apps Script 方案已按 v1.4 从 main 移除。Robin 的 TypeScript 后端在 main 的 `backend/`，已加入 AI 扫描结果的老师审核（`/api/v1/reviews`，34 项测试通过）；**尚未部署、尚未与前端连通**，portal 仍用 IndexedDB |
 
 README 和现有代码包含上传、人工批改、三表推导、进度、考试记录、错题和订正等演示功能。此处是代码与文档检查结果，不是完整浏览器验收结论。
 
@@ -197,4 +197,5 @@ README 和现有代码包含上传、人工批改、三表推导、进度、考�
 | 2026-10-13 | v1.3：数据库选定 Google Sheets（直接作为数据库），Apps Script 网页应用作服务端，Drive 存文件；IndexedDB 保留为离线演示模式；连接层由本 Claude Code 会话负责；演示访问控制为链接 + 令牌，非正式认证；取代 Supabase 候选。实现在 `a/sheets-db` 分支 | 用户明确指示“Google Sheet 直接当数据库，你负责做链接”；影响 `packages/contract` 存储层、新增 `backend/google-apps-script/`，不改页面接口 |
 | 2026-10-13 | `a/sheets-db` 合并 main 并推送；记录与 `codex/backend-automation-core` 的两处待决冲突（两套 Sheets 接入、是否需要老师审核） | 用户指示 push；推送前检查远程分支时发现 |
 | 2026-10-13 | v1.4：Sheets 改由 Robin 的 TypeScript 后端连接，Apps Script 方案作废并从 main 移除；确认 AI 批改／扫描结果必须老师审核，Robin 分支合并前需加入审核状态 | 用户决定“1. 用他的；2. 要老师审核”；影响 `packages/contract` 存储层、`backend/`、Robin 分支的 `BACKEND.md` 与导入流程 |
+| 2026-10-13 | 后端实现老师审核：AI 扫描结果先成为待审核（`awaiting_review` + MarkingReview），老师 confirm 后才写入成绩、错题和三表，reject 不记录；识别不清的题标记给老师而不记零分；学生看不到待审核建议。员工直接导入视为老师录入，不再审核 | 用户指示“直接改他的代码，符合我们的共识就行”；影响 `backend/src/services/scans.ts`、`imports.ts`、状态与 Sheets 表 `MT_reviews`、契约类型、OpenAPI 与后端文档 |
 

@@ -144,6 +144,24 @@ export function createApp(options: { repository: Repository; auth: Authenticator
     requireStudent(request.principal, job.studentId);
     return job;
   });
+  // Tutor review of AI scan grading. Staff only: students never see unconfirmed AI suggestions.
+  app.get('/api/v1/reviews', async request => {
+    const { status } = z.object({ status: z.enum(['pending', 'confirmed', 'rejected']).optional() }).parse(request.query);
+    const { items, stateRevision } = await scans.listReviews(request.principal, status);
+    return paginate(items, request.query, stateRevision);
+  });
+  app.get('/api/v1/reviews/:reviewId', async request => {
+    const { reviewId } = z.object({ reviewId: Id }).parse(request.params);
+    return scans.getReview(reviewId, request.principal);
+  });
+  app.post('/api/v1/reviews/:reviewId/confirm', async request => {
+    const { reviewId } = z.object({ reviewId: Id }).parse(request.params);
+    return scans.confirm(reviewId, request.body, request.principal);
+  });
+  app.post('/api/v1/reviews/:reviewId/reject', async request => {
+    const { reviewId } = z.object({ reviewId: Id }).parse(request.params);
+    return scans.reject(reviewId, request.body, request.principal);
+  });
   app.addHook('onClose', async () => { await scans.idle(); await repository.close(); });
   for (const register of options.modules ?? []) {
     app.register(async instance => { await register(instance, dependencies); });

@@ -27,7 +27,7 @@ type Cell = string | number | boolean;
 interface Table { title: string; rows: Cell[][] }
 interface Sheet { properties: { sheetId: number; title: string; gridProperties: { rowCount: number; columnCount: number } } }
 export const collections = ['students', 'knowledgePoints', 'exams', 'attempts', 'masteryObservations',
-  'activities', 'resources', 'policies', 'imports', 'audit', 'outbox', 'scanJobs'] as const;
+  'activities', 'resources', 'policies', 'imports', 'audit', 'outbox', 'scanJobs', 'reviews'] as const;
 export const sheetTitles = ['MT_Meta', ...collections.map(name => `MT_${name}`), 'MT_Marking', 'MT_Progress', 'MT_ExamStatistics'];
 function json(value: unknown) {
   const encoded = JSON.stringify(value);
@@ -74,7 +74,10 @@ export class SheetsRepository extends SerialRepository {
     const owned = this.sheets.filter(s => sheetTitles.includes(s.properties.title));
     if (!owned.length) return emptyState();
     requireCondition(owned.some(s => s.properties.title === 'MT_Meta'), 'SHEETS_SCHEMA_CONFLICT', 'Reserved MT_ tabs exist without an app ownership marker', 409);
-    const ranges = ['MT_Meta', ...collections.map(k => `MT_${k}`)].map(name => `ranges=${encodeURIComponent(`'${name}'!A:B`)}`).join('&');
+    // Tabs for collections added later (e.g. MT_reviews) may not exist yet in an older workbook: read them as empty.
+    const titles = new Set(this.sheets.map(s => s.properties.title));
+    const present = collections.filter(k => titles.has(`MT_${k}`));
+    const ranges = ['MT_Meta', ...present.map(k => `MT_${k}`)].map(name => `ranges=${encodeURIComponent(`'${name}'!A:B`)}`).join('&');
     const data = await this.transport.request<{ valueRanges: { values?: string[][] }[] }>('GET', `${this.spreadsheetId}/values:batchGet?${ranges}`);
     const metaRows = data.valueRanges[0]?.values;
     requireCondition(metaRows?.[0]?.[0] === 'key' && metaRows?.[1]?.[0] === 'meta', 'SHEETS_SCHEMA_CONFLICT', 'Invalid app ownership marker', 409);
@@ -83,7 +86,7 @@ export class SheetsRepository extends SerialRepository {
     const state = emptyState();
     state.revision = meta.revision;
     state.activePolicy = meta.activePolicy;
-    collections.forEach((key, index) => {
+    present.forEach((key, index) => {
       const rows = data.valueRanges[index + 1]?.values;
       requireCondition(rows?.[0]?.[0] === 'id' && rows?.[0]?.[1] === 'json', 'SHEETS_SCHEMA_CONFLICT', `Invalid header in MT_${key}`, 409);
       const entries = rows.slice(1).filter(row => row[0]).map(row => [row[0]!, JSON.parse(row[1]!)]);

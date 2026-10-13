@@ -1,18 +1,19 @@
 # Backend contract v1 — proposed integration addendum
 
-> **Superseded on teacher review (DESIGN_CONSENSUS.md v1.4, 2026-10-13):** the user decided that AI-marked and
-> scanned results **must be reviewed by a tutor** before they become official. The "no teacher review" rule in
-> "Explicit workflow change" below no longer applies. A pending → tutor-confirmed state must be added before the
-> portals connect to this backend. Results a tutor enters or confirms by hand count as reviewed; weekly-homework
-> multiple-choice auto-grading still needs no review.
-
 The existing [CONTRACT.md](CONTRACT.md) describes the portal's IndexedDB mock. The new backend is a separate service. The portal is **not switched to HTTP** in this backend-only change, and its pages, styles and mock data are retained.
 
 Canonical backend inputs and result types live in [src/index.ts](src/index.ts), HTTP requests in [openapi.json](openapi.json), and usage in [docs/api.md](../../docs/api.md). This addendum is submitted for the other owner's review; do not merge a contract change without that review.
 
-## Explicit workflow change
+## Tutor review of AI results (DESIGN_CONSENSUS.md v1.4)
 
-The user's latest instruction requires imported information to complete the workflow automatically, without teacher review. Consequently the backend has no pending → teacher approval gate. A valid manual/upstream marking import or completed AI scan immediately commits facts and projections. Model uncertainty is an automatic validation failure, with retries, not an approval state. The older mock workflow remains as-is until the frontend owner connects the new contract.
+The user requires a tutor to review AI-marked and scanned results before they become official. A processed scan
+job ends in `awaiting_review` with a `MarkingReview` holding per-question AI suggestions (`suggested`,
+`uncertain`, or `unreadable` - unreadable is never scored as zero). Nothing is written to attempts, mistakes or the
+three tables until a tutor calls `POST /api/v1/reviews/{id}/confirm` with the full marks; that call writes the
+attempt and all projections in one transaction. `reject` records nothing. Students cannot read reviews.
+
+Imports posted by staff through `/api/v1/imports` are tutor-entered or tutor-confirmed marks and need no second
+review. Weekly-homework multiple-choice auto-grading also needs no review.
 
 ## Field mapping for the future HTTP adapter
 
@@ -30,11 +31,11 @@ The user's latest instruction requires imported information to complete the work
 | not-understood / not-covered / insufficient | not_understood / not_covered / null |
 | ApiError VALIDATION / CONFLICT / STORAGE | map specific HTTP error codes as documented; preserve code for debugging |
 
-Mock getExhibits maps to the three `/api/v1/tables/*` endpoints; getEvidence/getMyProgress to the student's learning-state response; getMyMistakes to mistakes (filter BLANK for a W/C-only view). me/listStudents/reference catalog use me/students/exams/knowledge-points/policies. Confirming local marks maps to a single ImportBatch; no additional approval call follows it.
+Mock getExhibits maps to the three `/api/v1/tables/*` endpoints; getEvidence/getMyProgress to the student's learning-state response; getMyMistakes to mistakes (filter BLANK for a W/C-only view). me/listStudents/reference catalog use me/students/exams/knowledge-points/policies. Confirming local marks maps to a single ImportBatch. Confirming an AI scan result maps to `POST /api/v1/reviews/{id}/confirm`.
 
 The backend's initial rule version uses score ratios and latest attempts per exam. The existing mock uses a recent-evidence wrong-answer ratio. These are **different policies**, not interchangeable defaults. The backend is authoritative once connected; the frontend must display the backend's evidence/reason/policyVersion rather than recompute mastery. Review the proposed thresholds in defaultPolicy before the real demo. No student is labeled not-covered solely because data is absent.
 
-Not yet mapped: correction submission/review lifecycle, ungraded upload storage in Drive, externally reported exam timing logs, Classroom sync. These mock-only methods must not be presented as live backend functionality until their endpoints are implemented. The new scan endpoint currently requires its generated QR answer sheet and PNG/JPEG pages. A pre-existing arbitrary paper upload cannot silently be treated as graded.
+Not yet mapped: correction submission lifecycle, ungraded upload storage in Drive, externally reported exam timing logs, Classroom sync. These mock-only methods must not be presented as live backend functionality until their endpoints are implemented. The new scan endpoint currently requires its generated QR answer sheet and PNG/JPEG pages. A pre-existing arbitrary paper upload cannot silently be treated as graded.
 
 ## Owner B backend module interface
 

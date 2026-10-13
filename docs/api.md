@@ -36,7 +36,7 @@ Base URL：`http://127.0.0.1:3100`。机器契约 `GET /openapi.json`；类型�
 
 成功回执包含 id（source/batchId）、source、batchId、hash、createdBy、status、completedAt、changedRecords、studentIds、policyVersion、replayed。成功表示源记录、三表、审计已存入所选 repository；local 模式不写 Google。`GET /api/v1/imports/{source}/{batchId}` 查回执。
 
-更正：新 batchId、原 attempt.id、revision+1、完整 marks。重考：新 attempt.id、revision=1。网络超时/503 后先重发**相同 body 和 batchId**。校验后自动执行全部后续操作，没有 approve/confirm 请求。
+更正：新 batchId、原 attempt.id、revision+1、完整 marks。重考：新 attempt.id、revision=1。网络超时/503 后先重发**相同 body 和 batchId**。导入由员工身份提交，本身即老师录入或确认的成绩，校验后直接执行后续操作；**AI 扫描批改的结果不走这里**，必须先经老师审核（见下文“老师审核”）。
 
 ## 读取接口
 
@@ -59,6 +59,8 @@ Base URL：`http://127.0.0.1:3100`。机器契约 `GET /openapi.json`；类型�
 | GET `/api/v1/audit` | actorId/action/recordIds/importId/policyVersion | manager |
 | GET `/api/v1/events` | 通知 outbox | 员工，学生范围过滤 |
 | GET `/api/v1/sheets-schema` | schemaVersion 和 tables 的 name/columns | 员工 |
+| GET `/api/v1/reviews?status=pending` | 待老师审核的 AI 扫描批改（MarkingReview） | 员工，学生范围过滤 |
+| GET `/api/v1/reviews/{reviewId}` | 单个审核：逐题 AI 建议、置信度、识别文本 | 员工 |
 
 三表支持额外 studentId 查询。mastery=null 显示“资料不足”，不能映射为“未学”。band=high/medium/low 为语义值，颜色留给前端。后端没有样式。
 
@@ -81,4 +83,16 @@ outbox 事件含 id/at/type/referenceId/studentIds/policyVersion。消费端按 
 
 ## 扫描
 
-详见 [扫描流程](scanning-evaluation.md)。POST `/api/v1/answer-sheets` 返回 printable SVG；POST `/api/v1/scan-jobs` 接受 base64 PNG/JPEG、返回 202；GET `/api/v1/scan-jobs/{jobId}` 返回 queued/processing/completed/failed。未配置 AI 时返回 503，不生成假成绩。
+详见 [扫描流程](scanning-evaluation.md)。POST `/api/v1/answer-sheets` 返回 printable SVG；POST `/api/v1/scan-jobs` 接受 base64 PNG/JPEG、返回 202；GET `/api/v1/scan-jobs/{jobId}` 返回 queued/processing/awaiting_review/completed/rejected/failed。未配置 AI 时返回 503，不生成假成绩。
+
+## 老师审核（DESIGN_CONSENSUS.md v1.4）
+
+AI 批改只产生建议。扫描任务处理完后状态为 `awaiting_review`，并生成一条 `MarkingReview`（id 等于 jobId）。此时**没有** attempt、错题或三表记录；学生端也看不到这些建议。
+
+每题建议的 `status`：`suggested`（可直接采用）、`uncertain`（评分置信度不足）、`unreadable`（识别不清，没有建议分数）。未识别不等于未作答，也不等于零分，由老师看图判断。
+
+- POST `/api/v1/reviews/{reviewId}/confirm`，body `{"version":1,"marks":[…每题一条 Mark…]}`：老师逐题确认或修改。这一步写入 attempt（source=`ai-scan`）、错题、三表、审计（含 `changedQuestionIds`），任务变为 `completed`。校验失败时什么都不写，审核仍为 pending。
+- POST `/api/v1/reviews/{reviewId}/reject`，body `{"version":1,"reason":"…"}`：不记录成绩，任务变为 `rejected`，学生需重新上传（新 jobId）。
+- `version` 必须等于老师打开时看到的版本，否则 409 `REVIEW_VERSION_CONFLICT`；已处理的审核再提交返回 409 `REVIEW_NOT_PENDING`。两位老师同时确认只会成功一次。
+
+每周作业选择题按标准答案自动判分，不需要老师审核（不经过本接口）。

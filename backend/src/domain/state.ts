@@ -1,4 +1,4 @@
-import type { Activity, Attempt, Exam, KnowledgePoint, MasteryObservation, Policy,
+import type { Activity, Attempt, Exam, KnowledgePoint, MarkingReview, MasteryObservation, Policy,
   Projections, Resource, ScanJob, Student } from '../../../packages/contract/src/index.js';
 export interface StoredAttempt extends Attempt { source: string; importId: string }
 export interface ImportResult {
@@ -11,7 +11,7 @@ export interface AuditEntry {
   importId?: string; policyVersion: string;
 }
 export interface DomainEvent {
-  id: string; at: string; type: 'import.completed' | 'policy.activated' | 'notification.requested';
+  id: string; at: string; type: 'import.completed' | 'policy.activated' | 'notification.requested' | 'review.requested';
   referenceId: string; studentIds: string[]; policyVersion: string;
 }
 export interface State {
@@ -28,6 +28,8 @@ export interface State {
   audit: AuditEntry[];
   outbox: DomainEvent[];
   scanJobs: Record<string, ScanJob>;
+  /** AI scan results waiting for, or decided by, a tutor. */
+  reviews: Record<string, MarkingReview>;
   projections: Projections;
 }
 export const defaultPolicy: Policy = {
@@ -38,6 +40,14 @@ export function emptyState(): State {
   return { schemaVersion: 1, revision: 0, activePolicy: defaultPolicy.version,
     students: {}, knowledgePoints: {}, exams: {}, attempts: {}, masteryObservations: {},
     activities: {}, resources: {}, policies: { [defaultPolicy.version]: structuredClone(defaultPolicy) },
-    imports: {}, audit: [], outbox: [], scanJobs: {},
+    imports: {}, audit: [], outbox: [], scanJobs: {}, reviews: {},
     projections: { marking: [], progress: [], examStatistics: [], followUps: [] } };
+}
+/** Fill collections added after a state was first saved (e.g. reviews), so older data files still load. */
+export function withDefaults(state: State): State {
+  const base = emptyState();
+  for (const key of Object.keys(base) as (keyof State)[]) {
+    if (state[key] === undefined) (state as unknown as Record<string, unknown>)[key] = base[key];
+  }
+  return state;
 }

@@ -1,7 +1,7 @@
 import { mkdir, open, readFile, rename, unlink, type FileHandle } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { emptyState, type State } from '../domain/state.js';
+import { emptyState, withDefaults, type State } from '../domain/state.js';
 import { AppError } from '../domain/errors.js';
 
 export interface Repository {
@@ -61,7 +61,7 @@ export class FileRepository extends SerialRepository {
     try {
       const state = JSON.parse(await readFile(this.filename, 'utf8')) as State;
       if (state.schemaVersion !== 1 || !state.policies?.[state.activePolicy]) throw new Error('Unsupported state file');
-      return state;
+      return withDefaults(state);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return emptyState();
       throw error;

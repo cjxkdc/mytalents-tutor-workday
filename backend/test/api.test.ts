@@ -85,3 +85,39 @@ test('teammate module gets the documented dependencies and inherits authenticati
     assert.equal((await app.inject({ url: '/api/v1/teammate-test', headers: { 'x-demo-user': 'demo-teacher' } })).json().policyVersion, 'policy-1');
   } finally { await app.close(); }
 });
+test('HTTP review flow: scan waits for tutor review, students cannot see suggestions, confirm writes the tables', async () => {
+  const sharp = (await import('sharp')).default;
+  const { answerSheets } = await import('../src/scanning/templates.js');
+  const ai = {
+    available: true,
+    async recognize({ questionId }: { questionId: string }) { return { text: `answer ${questionId}`, confidence: 1 }; },
+    async grade({ question }: { question: { maxScore: number } }) { return { outcome: 'DONE' as const, score: question.maxScore, feedback: 'ok', confidence: 1 }; },
+  };
+  const { app, scans } = createApp({ repository: new MemoryRepository(), auth: new DemoAuthenticator(), ai });
+  try {
+    const manager = { 'x-demo-user': 'demo-manager' };
+    const teacher = { 'x-demo-user': 'demo-teacher' };
+    const learner = { 'x-demo-user': 'demo-student-1' };
+    await app.inject({ method: 'POST', url: '/api/v1/imports', headers: manager, payload: fixture() });
+    const identity = { studentId: 'demo-student-1', examId: 'algebra-test-1', attemptId: 'http-scan-attempt' };
+    const sheet = await answerSheets(fixture().exams[0]!, identity);
+    const image = (await sharp(Buffer.from(sheet.pages[0]!.svg)).png().toBuffer()).toString('base64');
+    const submitted = await app.inject({ method: 'POST', url: '/api/v1/scan-jobs', headers: learner, payload: {
+      ...identity, jobId: 'http-job', revision: 1, completedAt: '2026-10-12T00:00:00Z', pages: [{ pageNumber: 1, imageBase64: image }] } });
+    assert.equal(submitted.statusCode, 202);
+    await scans.idle();
+    assert.equal((await app.inject({ url: '/api/v1/scan-jobs/http-job', headers: learner })).json().status, 'awaiting_review');
+    assert.equal((await app.inject({ url: '/api/v1/reviews', headers: learner })).statusCode, 403);
+    assert.equal((await app.inject({ url: '/api/v1/reviews/http-job', headers: learner })).statusCode, 403);
+    const pending = (await app.inject({ url: '/api/v1/reviews?status=pending', headers: teacher })).json();
+    assert.equal(pending.items.length, 1);
+    const marks = ['q1', 'q2', 'q3', 'q4'].map(questionId => ({ questionId, outcome: 'DONE', score: 2 }));
+    const stale = await app.inject({ method: 'POST', url: '/api/v1/reviews/http-job/confirm', headers: teacher, payload: { version: 9, marks } });
+    assert.equal(stale.statusCode, 409); assert.equal(stale.json().error.code, 'REVIEW_VERSION_CONFLICT');
+    const confirmed = await app.inject({ method: 'POST', url: '/api/v1/reviews/http-job/confirm', headers: teacher, payload: { version: 1, marks } });
+    assert.equal(confirmed.statusCode, 200); assert.equal(confirmed.json().review.status, 'confirmed');
+    const stats = (await app.inject({ url: '/api/v1/tables/examStatistics?studentId=demo-student-1', headers: learner })).json();
+    assert.equal(stats.items.find((r: { attemptId: string }) => r.attemptId === 'http-scan-attempt').score, 8);
+    assert.equal((await app.inject({ url: '/api/v1/scan-jobs/http-job', headers: learner })).json().status, 'completed');
+  } finally { await app.close(); }
+});

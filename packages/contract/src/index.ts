@@ -127,9 +127,11 @@ export const ScanRequestSchema = AnswerSheetRequestSchema.extend({
 export type ScanRequest = z.infer<typeof ScanRequestSchema>;
 export interface ScanJob {
   id: string; hash: string; studentId: string; examId: string; attemptId: string;
-  requestedBy: string; status: 'queued' | 'processing' | 'completed' | 'failed';
+  requestedBy: string;
+  /** awaiting_review: AI suggestions are ready but not official until a tutor confirms them. */
+  status: 'queued' | 'processing' | 'awaiting_review' | 'completed' | 'rejected' | 'failed';
   policyVersion: string; examRevision: number;
-  createdAt: string; updatedAt: string; importId?: string;
+  createdAt: string; updatedAt: string; importId?: string; reviewId?: string;
   error?: { code: string; message: string }; tries: number;
 }
 export const RecognitionSchema = z.object({
@@ -139,3 +141,32 @@ export const AiGradeSchema = z.object({
   outcome: Outcome, score: z.number().nonnegative().max(1000),
   feedback: z.string().max(2000), confidence: z.number().min(0).max(1),
 }).strict();
+
+/**
+ * Tutor review of AI scan grading (DESIGN_CONSENSUS.md v1.4). AI output is a suggestion only; the attempt,
+ * mistakes and the three tables are written when a tutor confirms. Unreadable or low-confidence questions
+ * are flagged for the tutor instead of failing the job or being scored as zero.
+ */
+export interface ReviewSuggestion {
+  questionId: string;
+  status: 'suggested' | 'uncertain' | 'unreadable';
+  transcript?: string; recognitionConfidence: number;
+  outcome?: z.infer<typeof Outcome>; score?: number; feedback?: string; gradingConfidence?: number;
+}
+export interface MarkingReview {
+  id: string; jobId: string; studentId: string; examId: string; examRevision: number;
+  attemptId: string; attemptRevision: number; completedAt: string;
+  requestedBy: string; requestedByRole: z.infer<typeof Role>;
+  status: 'pending' | 'confirmed' | 'rejected';
+  /** Increases on every decision; confirm/reject must send the version the tutor was looking at. */
+  version: number;
+  suggestions: ReviewSuggestion[]; policyVersion: string; createdAt: string;
+  decidedAt?: string; decidedBy?: string; reason?: string; importId?: string;
+  /** Questions where the confirmed mark differs from the AI suggestion, or the AI had none. */
+  changedQuestionIds?: string[];
+}
+export const ReviewConfirmSchema = z.object({
+  version: Revision,
+  marks: z.array(MarkSchema).min(1).max(100),
+}).strict();
+export const ReviewRejectSchema = z.object({ version: Revision, reason: Text }).strict();

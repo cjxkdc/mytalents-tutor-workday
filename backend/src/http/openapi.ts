@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { AnswerSheetRequestSchema, ImportSchema, PolicySchema, ScanRequestSchema,
   StudentSchema, KnowledgePointSchema, ExamSchema, AttemptSchema, MasteryObservationSchema,
-  ActivitySchema, ResourceSchema, RecognitionSchema, AiGradeSchema } from '../../../packages/contract/src/index.js';
+  ActivitySchema, ResourceSchema, RecognitionSchema, AiGradeSchema, ReviewConfirmSchema, ReviewRejectSchema } from '../../../packages/contract/src/index.js';
 const schemas = { ImportBatch: ImportSchema, Policy: PolicySchema, AnswerSheetRequest: AnswerSheetRequestSchema,
   ScanRequest: ScanRequestSchema, Student: StudentSchema, KnowledgePoint: KnowledgePointSchema,
   Exam: ExamSchema, Attempt: AttemptSchema, MasteryObservation: MasteryObservationSchema,
-  Activity: ActivitySchema, Resource: ResourceSchema, Recognition: RecognitionSchema, AiGrade: AiGradeSchema };
+  Activity: ActivitySchema, Resource: ResourceSchema, Recognition: RecognitionSchema, AiGrade: AiGradeSchema,
+  ReviewConfirm: ReviewConfirmSchema, ReviewReject: ReviewRejectSchema };
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const response = (description: string) => ({ description, content: { 'application/json': { schema: { type: 'object' } } } });
 const pathParam = (name: string) => ({ name, in: 'path', required: true, schema: { type: 'string' } });
@@ -18,7 +19,7 @@ function operation(summary: string, body?: string, parameters: unknown[] = [], s
 }
 export function openApi() {
   return { openapi: '3.1.0', info: { title: 'MyTalents backend', version: '1.0.0',
-    description: 'Backend contracts only. No teacher review step. Default demo auth is loopback-only.' },
+    description: 'Backend contracts. AI scan grading waits for tutor review before marks become official. Default demo auth is loopback-only.' },
   servers: [{ url: 'http://127.0.0.1:3100' }], paths: {
     '/health': { get: { summary: 'Process liveness', responses: { '200': response('Alive') } } },
     '/api/v1/me': { get: operation('Authenticated principal') },
@@ -44,8 +45,16 @@ export function openApi() {
     ]) },
     '/api/v1/sheets-schema': { get: operation('App-owned Sheets tab names and columns') },
     '/api/v1/answer-sheets': { post: operation('Generate printable SVG answer sheets with QR identity', 'AnswerSheetRequest') },
-    '/api/v1/scan-jobs': { post: operation('Queue scan recognition, grading and automatic import', 'ScanRequest', [], '202') },
+    '/api/v1/scan-jobs': { post: operation('Queue scan recognition and AI grading; result waits for tutor review', 'ScanRequest', [], '202') },
     '/api/v1/scan-jobs/{jobId}': { get: operation('Read scan status or retry instructions', undefined, [pathParam('jobId')]) },
+    '/api/v1/reviews': { get: operation('Staff: AI scan results to review', undefined, [
+      { name: 'status', in: 'query', schema: { enum: ['pending', 'confirmed', 'rejected'] } },
+      { name: 'cursor', in: 'query', schema: { type: 'integer', minimum: 0 } },
+      { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 500 } },
+    ]) },
+    '/api/v1/reviews/{reviewId}': { get: operation('Staff: one review with per-question AI suggestions', undefined, [pathParam('reviewId')]) },
+    '/api/v1/reviews/{reviewId}/confirm': { post: operation('Tutor confirms or corrects every mark; writes the attempt and three tables', 'ReviewConfirm', [pathParam('reviewId')]) },
+    '/api/v1/reviews/{reviewId}/reject': { post: operation('Tutor rejects the AI result; nothing is recorded', 'ReviewReject', [pathParam('reviewId')]) },
   }, components: { securitySchemes: {
     bearerAuth: { type: 'http', scheme: 'bearer' },
     demoUser: { type: 'apiKey', in: 'header', name: 'X-Demo-User', description: 'Only enabled on loopback in demo mode' },

@@ -15,9 +15,9 @@
 }
 ```
 
-202 后轮询 job URL。每页必须一次齐全，二维码须匹配学生、试卷版本、attempt、页号，校验页面位置后裁剪。识别和评分分两步；每一步都校验置信度，所有结果通过规则后自动导入三表，不存在老师审核状态。
+202 后轮询 job URL。每页必须一次齐全，二维码须匹配学生、试卷版本、attempt、页号，校验页面位置后裁剪。识别和评分分两步；每一步都校验置信度。结果只作为建议进入老师审核（`awaiting_review`）：置信度不足的题标记为 uncertain/unreadable 交给老师判断，而不是让整份任务失败或记零分。老师确认后才写入三表，见 [API 说明](api.md) 的“老师审核”。
 
-job 返回 status、tries、policyVersion、examRevision、importId 或 error。failed 后可以重发相同内容和 jobId；更换图片则用新 jobId。学生不能覆盖已有考试；员工更正用新 jobId、同 attemptId、更高 revision。试卷变更要生成新的答题纸。
+job 返回 status、tries、policyVersion、examRevision、reviewId、importId 或 error。failed 后可以重发相同内容和 jobId；老师 reject 后或更换图片用新 jobId。学生不能覆盖已有考试；员工更正用新 jobId、同 attemptId、更高 revision。试卷变更要生成新的答题纸。
 
 原图只在内存，不写入审计/日志/Sheets；学生答案和反馈会作为成绩证据存储。重启时未完成任务变 failed，需重新上传。当前并发最多 2 个任务，繁忙返回 429。
 

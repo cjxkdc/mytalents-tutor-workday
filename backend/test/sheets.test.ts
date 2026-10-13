@@ -74,3 +74,13 @@ test('existing reserved tabs without ownership marker are never overwritten', as
   await assert.rejects(repo.read(), { code: 'SHEETS_SCHEMA_CONFLICT' });
   assert.equal(transport.writes, 0);
 });
+test('older workbook without the MT_reviews tab still loads, and the tab is created on the next write', async () => {
+  const transport = new FakeSheets(); const repo = new SheetsRepository('sheet-id', transport);
+  await new ImportService(repo).ingest(fixture(), manager);
+  assert.ok(transport.sheets.find(s => s.properties.title === 'MT_reviews'));
+  // Simulate a workbook written before reviews existed.
+  transport.sheets = transport.sheets.filter(s => s.properties.title !== 'MT_reviews');
+  const old = await new SheetsRepository('sheet-id', transport).read();
+  assert.deepEqual(old.reviews, {});
+  assert.equal(old.projections.marking.length, 4);
+});

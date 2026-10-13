@@ -18,7 +18,12 @@ export const hash = (value: unknown) => createHash('sha256').update(stable(value
 
 export class ImportService {
   constructor(private repository: Repository, private now = () => new Date().toISOString()) {}
-  async ingest(input: unknown, actor: Principal, constraints: { requireNewAttempts?: boolean; examRevisions?: Record<string, number>; trustedAi?: boolean } = {}) {
+  /**
+   * constraints.within runs first inside the same transaction as the import. The review flow uses it to check
+   * and close the review atomically with writing the attempt: if either fails, nothing is saved.
+   */
+  async ingest(input: unknown, actor: Principal, constraints: { requireNewAttempts?: boolean; examRevisions?: Record<string, number>;
+    trustedAi?: boolean; within?: (draft: State, importId: string) => void } = {}) {
     requireStaff(actor);
     const batch = ImportSchema.parse(input);
     requireCondition(batch.source !== 'ai-scan' || constraints.trustedAi, 'RESERVED_SOURCE', 'ai-scan is reserved for the configured scan service', 403);
@@ -29,6 +34,7 @@ export class ImportService {
     for (const studentId of studentIds) requireStudent(actor, studentId);
     // Shared curriculum is global. Only managers may create or change it; teachers may repeat identical snapshots.
     return this.repository.transact(state => {
+      constraints.within?.(state, id);
       const existing = state.imports[id];
       if (existing) {
         requireCondition(existing.hash === digest, 'IDEMPOTENCY_CONFLICT', 'Reuse the batch ID only with identical content', 409);
