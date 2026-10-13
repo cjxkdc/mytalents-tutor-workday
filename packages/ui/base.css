@@ -27,6 +27,10 @@ h3 { font-size: 17px; font-weight: 600; margin: 18px 0 8px; }
 .band { background: var(--band); height: 56px; }
 .demo-strip { background: #eff6ff; color: var(--brand-900); border-bottom: 1px solid var(--border); font-size: 13px; padding: 4px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .demo-strip button { font: inherit; font-size: 12px; background: none; border: 1px solid currentColor; color: inherit; border-radius: var(--radius); padding: 0 8px; cursor: pointer; }
+.backend-status { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); }
+.backend-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+.backend-status.up::before { background: var(--good); }
+.backend-status.up { color: var(--good); }
 
 main.page { max-width: 1240px; margin: -24px auto 0; padding: 0 20px 48px; position: relative; outline: none; }
 .page-head { background: var(--surface); padding: 20px 24px; margin-bottom: 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 2px rgba(30, 64, 175, .06); }
