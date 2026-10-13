@@ -7,7 +7,7 @@
 
 import * as data from './mock-data.js';
 import * as derive from './derive.js';
-import { db } from './storage.js'; // IndexedDB (default) or Google Sheets, see storage.js
+import * as db from './db.js';
 import * as tt from './timetable.js';
 
 export class ApiError extends Error {
@@ -40,7 +40,6 @@ const listeners = new Set();
 const channel = 'BroadcastChannel' in self ? new BroadcastChannel('tutor-workday-demo') : null;
 const emitLocal = () => listeners.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
 if (channel) channel.onmessage = emitLocal;
-db.onRemoteChange?.(emitLocal); // Sheets: changes made on other devices
 addEventListener('focus', emitLocal);
 function changed() { emitLocal(); channel?.postMessage('changed'); }
 
@@ -48,8 +47,6 @@ function changed() { emitLocal(); channel?.postMessage('changed'); }
 async function seedTx(t, force) {
   const meta = await t.get('meta', 'seed');
   if (!force && meta?.version === data.SEED_VERSION) return;
-  // A shared database (Sheets) is never wiped automatically because the seed version changed.
-  if (!force && meta && db.autoReseed === false) return;
   for (const s of db.STORES) await t.clear(s);
   await t.put('meta', { id: 'seed', version: data.SEED_VERSION });
   for (const r of data.seedResults) await t.put('results', r);
@@ -600,8 +597,6 @@ export function createMockApi(user) {
   api.subscribe = fn => { listeners.add(fn); return () => listeners.delete(fn); };
   return api;
 }
-
-export const storage = { kind: db.kind, label: db.label };
 
 export const demoUsers = {
   staff: data.users.staff,

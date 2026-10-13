@@ -1,6 +1,6 @@
 # MyTalents 设计共识与开发协作
 
-版本：1.3  
+版本：1.4  
 更新日期：2026-10-13，Australia/Sydney  
 适用对象：用户、队友、Claude Code、Codex 及后续参与开发的 chat。
 
@@ -77,18 +77,13 @@ MyTalents 的 hackathon 产品用于减少教学管理中的重复录入，并�
 - 冲突用确定性代码检查：同一学生时间重叠、超出 14:00–19:00 班次、周末。同一老师或教室同时带多名学生是正常的小组课，不算冲突。
 - 归属：Timetable 的学生端和员工端由用户负责。员工端原来的 Today 和 Calendar 占位合并为 Timetable 页面。
 
-### 数据库（v1.3 确认）
+### 数据库（v1.3 确认，v1.4 修订连接方式）
 
-2026-10-13 用户决定：**Google Sheets 直接作为数据库**，由用户指派本 Claude Code 会话负责连接层。
-
-- 每个事实表对应 Sheets 中的一个 tab；扫描件等文件存 Google Drive。
-- 服务端为绑定在该 Spreadsheet 上的 Google Apps Script 网页应用：负责读写 Sheets、加锁、校验并发版本、存取 Drive 文件。前端仍只通过 `ctx.api` 契约访问，页面不直接调用 Sheets。
-- 现有 IndexedDB 保留为本地离线演示模式，通过配置切换，两种模式共用同一套 API 逻辑。
-- 连接层文件（Apps Script 服务、Sheets 存储适配器、存储选择配置）由本会话负责；事实表结构改动需告知负责人并更新契约。
-- 演示阶段的访问控制为“网页应用链接 + 共享令牌”，不是正式认证；不能宣传为已具备学生数据权限控制。正式版本需要 Google 账号登录和服务端权限校验（见“部署与权限”）。
-- 演示阶段业务校验仍在浏览器内的 API 层执行，服务端只保证写入的原子性和并发冲突检测；共识要求的服务端判分（每周作业标准答案）以后要放进 Apps Script。
-- 学生、课表模板、试卷等参考数据暂时仍在代码中；迁入 Sheets 需与 Timetable 任务协调后进行。
-- 这项决定取代此前讨论过的 Vercel + Supabase 候选方案。
+- 2026-10-13 用户决定：**Google Sheets 直接作为数据库**。
+- v1.4 用户决定：**Sheets 由 Robin 的 TypeScript 后端连接**（分支 `codex/backend-automation-core`：服务账号调用 Sheets API，每次事务一次 `batchUpdate`，单实例部署）。后端及其 Sheets repository 由 Robin 负责。
+- v1.3 的 Apps Script 方案作废，相关代码（`backend/google-apps-script/`、`packages/contract/sheets-db.js`、`storage.js`）已从 main 移除，只保留在 Git 历史中。
+- 在前端接入该后端的 HTTP 接口之前，两个 portal 仍使用浏览器 IndexedDB 演示数据。前端 HTTP 适配器是待安排的任务，字段对应见该分支的 `packages/contract/BACKEND.md`。
+- 演示访问控制、正式认证等限制仍按“部署与权限”执行；不能把本地数据演示描述成已接通的 Sheets 同步。
 
 ## SAC 与纸质材料的工作流程
 
@@ -127,7 +122,7 @@ MyTalents 的 hackathon 产品用于减少教学管理中的重复录入，并�
 | 数据存储 | IndexedDB 保存演示业务数据与图片；localStorage 保存演示身份 |
 | 后端 | 尚无已接通的真实业务后端；Python 服务只是静态文件开发服务器 |
 | 集成 | 未接通真实 OCR、Google 同步、企业微信或正式身份认证 |
-| Google Sheets 存储（2026-10-13 合并入 main） | 已实现 Apps Script 服务（`backend/google-apps-script/Code.gs`）、浏览器适配器（`packages/contract/sheets-db.js`）和存储选择（`storage.js`）；用本地模拟器跑通 15 项测试。**尚未部署到真实 Google 账号**，需要用户按 `SETUP.md` 操作后才算接通；默认仍为 IndexedDB |
+| Google Sheets 存储 | v1.3 的 Apps Script 方案已按 v1.4 从 main 移除。Robin 的 TypeScript 后端在 `codex/backend-automation-core` 分支，尚未合并、尚未与前端连通；portal 仍用 IndexedDB |
 
 README 和现有代码包含上传、人工批改、三表推导、进度、考试记录、错题和订正等演示功能。此处是代码与文档检查结果，不是完整浏览器验收结论。
 
@@ -160,20 +155,16 @@ README 和现有代码包含上传、人工批改、三表推导、进度、考�
 
 ### 部署与权限
 
-- 讨论过 Vercel + Supabase，也讨论过 Next.js，但当前代码没有采用这些作为已运行的生产架构。v1.3 起数据库已选定为 Google Sheets（见“数据库”），Supabase 不再是候选。前端托管方式仍待定。
+- 讨论过 Vercel + Supabase，也讨论过 Next.js，但当前代码没有采用这些作为已运行的生产架构。v1.3 起数据库已选定为 Google Sheets，v1.4 起由 Robin 的 TypeScript 后端连接（见“数据库”），Supabase 不再是候选。前端与后端的托管方式仍待定。
 - 不因为之前的建议自动重写现有原生 JavaScript 应用。先评估如何沿用当前框架接入所选后端。
 - 三个角色入口共用一套业务后端和事实数据；独立部署数量仍待定。
 - 正式版本需要真实认证、服务端权限和文件访问控制。隐藏菜单、拆分域名或浏览器 mock 检查不能替代权限控制。
 - 演示使用合成数据；不能把本地数据演示描述成跨设备实时同步、真实 Google Sheets 同步或已上线生产系统。
 
-### 待用户决定的冲突（2026-10-13 发现）
+### 已决定：与 `codex/backend-automation-core` 的冲突（v1.4）
 
-远程分支 `codex/backend-automation-core`（作者 Robin，未合并）与本文件存在两处冲突，用户决定前不得把任一方默认为已批准：
-
-1. **两套 Google Sheets 接入方案并存**：该分支是独立 TypeScript 服务（服务账号调用 Sheets API，pnpm 工作区）；本文件 v1.3 记录的是 Apps Script 网页应用方案（`a/sheets-db`，已合并 main）。最终只保留一种，或明确分工（如 Apps Script 作演示存储、TS 服务作后续后端）。
-2. **老师审核**：该分支 `packages/contract/BACKEND.md` 写明“导入或 AI 扫描结果自动成为正式成绩，没有老师审核环节”，依据为另一份 hackathon 文档中的“最新要求”。本文件 v1.1–v1.3 与用户给出的考试流程均为“AI 批改 → 老师审核”。
-
-两边重叠的文件为 `README.md`、`packages/contract/CONTRACT.md`、`.gitignore`。
+1. **Sheets 接入**：采用 Robin 的 TypeScript 后端方案（见“数据库”）。
+2. **老师审核**：**要老师审核**。AI 批改或扫描提取的结果先保存为待审核，老师确认后才成为正式成绩并更新错题、反馈和三表。该分支 `BACKEND.md` 中“导入或 AI 扫描结果自动成为正式成绩，没有老师审核环节”的写法与此冲突，**合并前必须改为带审核状态**。老师本人手工录入或确认的成绩本身即为审核结果，不需要再审一次；每周作业选择题的自动判分仍不需要审核（见“Modules 与自动批改”）。
 
 ### 管理与其他模块
 
@@ -205,4 +196,5 @@ README 和现有代码包含上传、人工批改、三表推导、进度、考�
 | 2026-10-13 | v1.2：保留并合并同时发生的 v1.1 更新；消除旧 SAC 段落跳过 AI 批改、IRT 仍可选及每节课默认测验的冲突；明确考试审核与每周作业自动评分的边界 | 用户确认的两条主流程；本轮只更新共识文档，没有实现业务功能 |
 | 2026-10-13 | v1.3：数据库选定 Google Sheets（直接作为数据库），Apps Script 网页应用作服务端，Drive 存文件；IndexedDB 保留为离线演示模式；连接层由本 Claude Code 会话负责；演示访问控制为链接 + 令牌，非正式认证；取代 Supabase 候选。实现在 `a/sheets-db` 分支 | 用户明确指示“Google Sheet 直接当数据库，你负责做链接”；影响 `packages/contract` 存储层、新增 `backend/google-apps-script/`，不改页面接口 |
 | 2026-10-13 | `a/sheets-db` 合并 main 并推送；记录与 `codex/backend-automation-core` 的两处待决冲突（两套 Sheets 接入、是否需要老师审核） | 用户指示 push；推送前检查远程分支时发现 |
+| 2026-10-13 | v1.4：Sheets 改由 Robin 的 TypeScript 后端连接，Apps Script 方案作废并从 main 移除；确认 AI 批改／扫描结果必须老师审核，Robin 分支合并前需加入审核状态 | 用户决定“1. 用他的；2. 要老师审核”；影响 `packages/contract` 存储层、`backend/`、Robin 分支的 `BACKEND.md` 与导入流程 |
 

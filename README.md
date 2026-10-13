@@ -24,9 +24,9 @@ Use "Reset demo data" in the top strip to start over.
 
 ### Storage
 
-By default data lives in your browser (IndexedDB). To use the shared **Google Sheets database**, follow
-[backend/google-apps-script/SETUP.md](backend/google-apps-script/SETUP.md) and create
-`packages/contract/config.local.json`. The top strip shows which storage is active.
+Data currently lives in your browser (IndexedDB, synthetic demo data). The shared Google Sheets database is
+connected through the TypeScript backend on branch `codex/backend-automation-core` (owner: Robin); the portals
+are not wired to it yet. See DESIGN_CONSENSUS.md, "数据库".
 
 ## Product direction
 
@@ -57,7 +57,7 @@ apps/staff/          staff portal
 apps/student/        student portal
 packages/contract/   CONTRACT.md, mock API (IndexedDB), derive functions, synthetic data
 packages/ui/         tokens, base styles, router, layout, shared components
-backend/             google-apps-script/: Sheets database service (Code.gs), setup guide, simulator tests
+backend/             (TypeScript backend lives on branch codex/backend-automation-core, not merged yet)
 docs/                milestones and ownership
 prototype/           earlier single-page prototype, kept for reference
 serve.py             no-cache dev server
